@@ -50,7 +50,7 @@ export function circuitReducer(state: CircuitState, action: CircuitAction): Circ
     }
     case 'remove': return { ...state, wires: state.wires.filter(w => w.id !== action.id), pending: null, notice: '已刪除導線。' };
     case 'level': return { ...state, level: action.level, notice: `GPIO23 輸出已設為 ${action.level}。` };
-    case 'example': return { ...state, wires: exampleWires(), pending: null, level: 'LOW', notice: '已載入正確範例。按 HIGH 觀察 LED 亮起。' };
+    case 'example': return { ...state, wires: exampleWires(), pending: null, level: 'LOW', notice: '已載入正確接線範例，請使用輸出控制觀察 LED。' };
     case 'clear': return { ...initialCircuitState, nextWire: state.nextWire, notice: '已清空接線，輸出回到 LOW。' };
     case 'cancel': return { ...state, pending: null, notice: '已取消接線起點。' };
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { RotateCcw, Mouse, Layers3, Plus, Minus } from 'lucide-react';
 import { board } from '../board';
 import type { CircuitWire } from '../circuit';
@@ -7,7 +7,7 @@ interface ViewerProps {
   selectedId:string; onSelect:(id:string)=>void;
   lesson?:{wires:CircuitWire[];lit:boolean;pending:string|null};
 }
-export default function BoardViewer({selectedId,onSelect,lesson}:ViewerProps) {
+function BoardViewer({selectedId,onSelect,lesson}:ViewerProps) {
   const [resetKey,setResetKey]=useState(0);
   const [simple,setSimple]=useState(false);
   const [zoomCommand,setZoomCommand]=useState<{direction:1|-1;sequence:number}|null>(null);
@@ -19,3 +19,5 @@ export default function BoardViewer({selectedId,onSelect,lesson}:ViewerProps) {
     <div className="viewer-bottom"><span className="mouse-help"><Mouse size={21}/><span>拖曳：旋轉<span className="help-separator">　</span>右鍵／Shift＋拖曳：平移<span className="help-separator">　</span>滾輪／雙指捲動：縮放<span className="help-separator">　</span>{lesson?'點兩端：接線':'點擊：選擇接腳'}</span></span><button className={`simple-button${simple?' active':''}`} aria-pressed={simple} onClick={()=>setSimple(v=>!v)} title="隱藏小元件並降低解析度"><Layers3 size={15}/>{simple?'簡化模式開啟':'簡化模式'}</button></div>
   </section>;
 }
+
+export default memo(BoardViewer);

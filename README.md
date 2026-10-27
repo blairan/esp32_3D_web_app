@@ -33,12 +33,12 @@ npm run preview
 
 **外觀、針距、排距與細部元件是教學示意，不是製造 CAD。** 正式機構 PDF 與現行模組額定尚待補核；不將示意座標宣稱為已量測。原始 30 Pin DOIT 研究保留作歷史，現行定義依 v0.2 決策。
 
-已加入 LED 接線教學：點選端點接線、刪線、固定 220 Ω 電阻與單顆 LED、接線診斷及 HIGH／LOW 亮滅。切換右上方「LED 接線」，或使用網址 `#led` 進入。課程與規則詳見 [LED 教學契約](docs/led-lesson.md)。Arduino/Blink 編輯器與 Worker 模擬尚未實作。使用者已授權 GitHub Pages 試用版部署；設定與首次啟用方式見 [部署說明](docs/github-pages.md)。Codex Sites 未建立。
+已加入 LED 接線教學：點選端點接線、刪線、固定 220 Ω 電阻與單顆 LED、接線診斷及 HIGH／LOW 亮滅。切換右上方「LED 接線」，或使用網址 `#led` 進入。課程與規則詳見 [LED 教學契約](docs/led-lesson.md)。已加入「程式練習」（網址 `#code`）：限定 Arduino Blink 編輯器、虛擬時鐘、Worker 解譯、執行／暫停／停止／重設與行列錯誤。完整語法與限制見 [程式教學契約](docs/program-lesson.md)。使用者已授權 GitHub Pages 試用版部署；設定與首次啟用方式見 [部署說明](docs/github-pages.md)。Codex Sites 未建立。
 
 ## 驗證狀態
 
-18 項資料／電路測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+36 項資料／電路／程式測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
-這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產 gzip 約 0.22 MB，低於 5 MB 目標。
+這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產 gzip 約 0.23 MB，低於 5 MB 目標。
 
 來源與變更理由見 `docs/board-decision-v0.2.md`；接續狀態見 `docs/development-handoff.md`。原始碼與文件已推送 GitHub 的 main 分支；目前 GitHub Pages 的啟用與遠端部署成功狀態尚待確認。

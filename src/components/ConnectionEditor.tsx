@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Cable, Cpu, Lightbulb, Trash2, ArrowRight, X, CircuitBoard } from 'lucide-react';
 import { pins, titleFor } from '../board';
 import { terminalLabel, wireColor } from '../circuit';
 import type { CircuitState, CircuitAction } from '../circuit';
 interface Props {state:CircuitState;dispatch:(action:CircuitAction)=>void;onPick:(terminal:string)=>void}
-export default function ConnectionEditor({state,dispatch,onPick}:Props) {
+function ConnectionEditor({state,dispatch,onPick}:Props) {
   const [otherPin,setOtherPin]=useState('J2-03');
   const terminal=(id:string,label:string)=> <button className={`terminal-button${state.pending===id?' pending':''}`} aria-pressed={state.pending===id} aria-label={`接線端點 ${terminalLabel(id)}`} onClick={()=>onPick(id)} key={id}><i/>{label}</button>;
   return <section className="connection-editor" aria-labelledby="connection-title">
@@ -18,3 +18,5 @@ export default function ConnectionEditor({state,dispatch,onPick}:Props) {
     <div className={`connection-notice${state.pending?' choosing':''}`} role="status"><span>{state.notice||'接線尚未開始。載入範例後，也可以刪除導線看看會發生什麼。'}</span>{state.pending&&<button onClick={()=>dispatch({type:'cancel'})}><X size={13}/>取消接線</button>}</div>
   </section>;
 }
+
+export default memo(ConnectionEditor);

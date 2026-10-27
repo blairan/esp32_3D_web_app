@@ -2,6 +2,8 @@
 
 日期：2026-10-27（Asia/Taipei）。沿用 ESP32-DevKitC V4／ESP32-WROOM-32E，單板 38 Pin。使用者已要求開始外接 LED 接線教學，沿用既有 GitHub Pages 試用版更新流程。
 
+> 本文件保存 Sprint 3 的手動接線契約；新增程式分頁的規則另見 [Sprint 4 契約](program-lesson.md)。
+
 ## 可操作範圍
 
 - 保留原「接腳探索」，新增「LED 接線」分頁；網址 `#led` 可直接進入課程。
