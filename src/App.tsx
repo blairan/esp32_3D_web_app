@@ -21,7 +21,7 @@ export default function App() {
           <BoardScene selectedId={selectedId} onSelect={selectPin} resetKey={resetKey} simple={simple} zoomCommand={zoomCommand}/>
           <div className="viewer-toolbar"><div><h2>{board.name}</h2><p>{board.module}<span className="middot">·</span>38 Pin</p></div><button className="reset-button" onClick={() => setResetKey(k => k + 1)}><RotateCcw size={15}/>重設視角</button></div>
           <div className="zoom-controls" role="group" aria-label="模型縮放"><button aria-label="放大模型" title="放大模型" onClick={() => zoom(1)}><Plus size={17}/></button><button aria-label="縮小模型" title="縮小模型" onClick={() => zoom(-1)}><Minus size={17}/></button></div>
-          <div className="viewer-bottom"><span className="mouse-help"><Mouse size={21}/><span>拖曳：旋轉<span className="help-separator">　</span>滾輪／雙指捲動：縮放<span className="help-separator">　</span>點擊：選擇接腳</span></span><button className={`simple-button${simple ? ' active' : ''}`} aria-pressed={simple} onClick={() => setSimple(v => !v)} title="隱藏小元件並降低解析度"><Layers3 size={15}/>{simple ? '簡化模式開啟' : '簡化模式'}</button></div>
+          <div className="viewer-bottom"><span className="mouse-help"><Mouse size={21}/><span>拖曳：旋轉<span className="help-separator">　</span>右鍵／Shift＋拖曳：平移<span className="help-separator">　</span>滾輪／雙指捲動：縮放<span className="help-separator">　</span>點擊：選擇接腳</span></span><button className={`simple-button${simple ? ' active' : ''}`} aria-pressed={simple} onClick={() => setSimple(v => !v)} title="隱藏小元件並降低解析度"><Layers3 size={15}/>{simple ? '簡化模式開啟' : '簡化模式'}</button></div>
         </section>
         <PinInspector pin={pinById.get(selectedId)!}/>
       </div>

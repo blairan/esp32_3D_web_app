@@ -7,3 +7,5 @@
 
 .zoom-controls{position:absolute;right:18px;bottom:67px;display:flex;flex-direction:column;border:1px solid #d3dce5;border-radius:6px;background:#fff;box-shadow:0 2px 7px #21344a09;overflow:hidden}.zoom-controls button{width:35px;height:35px;display:grid;place-items:center;border:0;background:white;color:#52657b}.zoom-controls button+button{border-top:1px solid #e0e5eb}.zoom-controls button:hover{background:#edf7f3;color:#087f68}.zoom-controls button:focus-visible{outline-offset:-4px}.scene-message{z-index:2}.viewer-toolbar,.viewer-bottom,.zoom-controls{z-index:3}
 @media(max-width:760px){.zoom-controls{right:16px;bottom:78px}.zoom-controls button{width:38px;height:38px}}
+
+.mouse-help>span{max-width:100%}.mouse-help{min-width:0;flex:1}.viewer-bottom .simple-button{flex-shrink:0}@media(min-width:1101px){.mouse-help>span{max-width:440px}}

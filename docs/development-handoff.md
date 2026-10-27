@@ -57,3 +57,14 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 下一步：儲存庫 Settings → Pages → Source 選 GitHub Actions；再至 Actions → Publish GitHub Pages → Run workflow（main）。若使用者已完成，確認 deployment 的 page_url 與公開頁面載入，才能宣布試用網址可用。若要由雲端代查部署結果，環境網路草稿也需檢閱、儲存並發布後才能重試管理 API／公開網址。
 
 發布狀態：**程式與工作流程已推送，公開網站是否部署成功尚未確認**。沒有建立 PR，也未改動儲存庫可見性或宣稱 GitHub Pages 已啟用。
+
+
+## 整板平移更新
+
+使用者確認初版可操作並授權新增整板平移及更新 GitHub Pages。開啟 OrbitControls 的螢幕平面平移，右鍵拖曳或 Shift＋左鍵拖曳操作；板上元件與接腳相對座標不變。選取處理會排除右鍵及 Shift/Ctrl/Meta 手勢，避免短距離平移誤選接腳。
+
+重設既有流程可一併清除平移慣性、回復旋轉中心、相機與縮放；平移後縮放按鈕仍以當前視角中心為準。操作提示與窄畫面換行已更新。
+
+驗證：4 項資料測試及 production build 通過；Playwright／Chromium 以 1280×720、390×844 驗證右鍵平移、Shift 平移、平移後旋轉／縮放、移動途中立即重設、修飾鍵點擊不誤選、普通 3D 點選、操作說明與無橫向溢位。原有 14 項操作流程回歸也通過，無 console error 或未處理例外。Browser 插件未提供，使用既有 Playwright；仍非 Acer 實體觸控板效能量測。
+
+部署前確認：官方 GitHub API 已可讀取，Pages 的 build_type 為 workflow，前次部署成功；使用者也已確認網站可操作，先前「尚無法存取 API／Pages 未啟用」已是歷史狀態。這次更新推送後需以最新 workflow 結果與公開頁面確認上線。

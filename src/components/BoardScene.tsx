@@ -30,14 +30,16 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     const canvas = renderer.domElement;
-    canvas.setAttribute('aria-label', 'ESP32 開發板 3D 模型，拖曳旋轉、捲動縮放；亦可使用下方接腳清單選取');
+    canvas.setAttribute('aria-label', 'ESP32 開發板 3D 模型，拖曳旋轉、右鍵或 Shift 加拖曳平移、捲動縮放；亦可使用下方接腳清單選取');
     container.appendChild(canvas);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(33, 1, 0.1, 800);
     const controls = new OrbitControls(camera, canvas);
     controls.enableDamping = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     controls.dampingFactor = 0.09;
-    controls.enablePan = false;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
     controls.minDistance = 58;
     controls.maxDistance = 190;
     controls.rotateSpeed = 0.65;
@@ -166,16 +168,17 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     const pointerDown = (e: PointerEvent) => {
       activePointers.add(e.pointerId);
       if (activePointers.size > 1) { if (down) down.multi = true; return; }
+      if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey) { down = null; return; }
       if (e.button === 0) down = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false, multi: false };
     };
     const pointerMove = (e: PointerEvent) => {
-      if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) down.moved = true;
+      if (down && (e.shiftKey || e.ctrlKey || e.metaKey || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6)) down.moved = true;
     };
     const pointerUp = (e: PointerEvent) => {
       activePointers.delete(e.pointerId);
       if (!down || e.pointerId !== down.id) return;
       const start = down; down = null;
-      if (start.multi || start.moved || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
+      if (e.shiftKey || e.ctrlKey || e.metaKey || start.multi || start.moved || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
       const rect = canvas.getBoundingClientRect();
       raycaster.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), camera);
       const hit = raycaster.intersectObjects(hitboxes)[0];
