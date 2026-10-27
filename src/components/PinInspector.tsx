@@ -7,7 +7,7 @@ export default function PinInspector({ pin }: { pin: Pin }) {
   return <aside className="inspector" aria-label="接腳資訊面板">
     <div className="selection-heading" aria-live="polite" aria-atomic="true">
       <span className="eyebrow">已選擇的接腳</span>
-      <h2 style={{ color: category.color }}>{titleFor(pin)}</h2>
+      <h2 style={{ color: pin.category==='gpio'?'var(--accent-ink)':category.color }}>{titleFor(pin)}</h2>
       <p><span className="mono">{pin.pinId}</span><span className="middot">·</span>{role}</p>
     </div>
     <h3>接腳資訊</h3>

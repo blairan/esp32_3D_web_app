@@ -7,7 +7,7 @@ export interface Pin {
   category: PinCategory; x: number; y: number;
 }
 export const categories: Record<PinCategory, { label: string; color: string }> = {
-  gpio: { label: '一般 GPIO', color: '#087f68' },
+  gpio: { label: '一般 GPIO', color: '#3563e9' },
   input: { label: '只能輸入', color: '#c55260' },
   power: { label: '電源', color: '#3978c4' },
   ground: { label: '接地', color: '#64748b' },

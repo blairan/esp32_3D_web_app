@@ -27,7 +27,7 @@ export function exampleWires(): CircuitWire[] {
   return [
     { id: 'example-1', from: 'J3-02', to: 'resistor:a' },
     { id: 'example-2', from: 'resistor:b', to: 'led:a' },
-    { id: 'example-3', from: 'led:k', to: 'J3-01' },
+    { id: 'example-3', from: 'led:k', to: 'J3-07' },
   ];
 }
 export function wireError(wires: CircuitWire[], from: string, to: string): string | null {
@@ -105,6 +105,23 @@ export function analyzeCircuit(wires: CircuitWire[], level: OutputLevel): Circui
 }
 export function wireColor(wire: CircuitWire): string {
   if ([wire.from, wire.to].some(id => pinById.get(id)?.role === 'ground')) return '#536477';
-  if (wire.from === lessonDefinition.source || wire.to === lessonDefinition.source) return '#079a76';
-  return '#4385db';
+  if (wire.from === lessonDefinition.source || wire.to === lessonDefinition.source) return '#3b67cf';
+  return '#d88a39';
+}
+
+export interface CurrentSegment {id:string;kind:'wire'|'resistor'|'led';from:string;to:string}
+/** Conventional current direction, not electron speed or an analog current estimate. */
+export function currentPath(wires:CircuitWire[],level:OutputLevel):CurrentSegment[]{
+  if(!analyzeCircuit(wires,level).lit)return [];
+  const edges:CurrentSegment[]=[...wires.map(wire=>({...wire,kind:'wire' as const})),{id:'resistor',kind:'resistor',from:'resistor:a',to:'resistor:b'},{id:'led',kind:'led',from:'led:a',to:'led:k'}];
+  const result=new Map<string,CurrentSegment>();
+  function visit(node:string,seen:Set<string>,path:CurrentSegment[]){
+    if(pinById.get(node)?.role==='ground'){path.forEach(segment=>result.set(`${segment.kind}:${segment.id}`,segment));return;}
+    for(const edge of edges){
+      const next=edge.from===node?edge.to:edge.to===node&&edge.kind!=='led'?edge.from:null;
+      if(!next||seen.has(next))continue;
+      visit(next,new Set([...seen,next]),[...path,{...edge,from:node,to:next}]);
+    }
+  }
+  visit(lessonDefinition.source,new Set([lessonDefinition.source]),[]);return [...result.values()];
 }
