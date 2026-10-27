@@ -25,3 +25,7 @@ WikiProvider 保存獨立文章歷史，透過穩定 context callback 開啟。A
 - 官方文件主站的直接 HTTP 驗證受到此環境代理 403 阻擋，不將外站逐頁可用性標為通過。已經由 GitHub API 確認 Arduino 官方 reference-en 的五個對應函式／結構文件及 docs-content 的 Blink、Digital Pins 原始文件存在，並核對基本教學內容。內部文章無需外站連線即可閱讀。
 
 發布延續 main → GitHub Actions → GitHub Pages，需以本次工作流程與公開新資產確認結果。
+
+## 第二課擴充
+
+2026-10-27 新增按鈕／INPUT_PULLUP、digitalRead、if／else 三篇，總數九篇；目錄數量由資料推導。原 GPIO、pinMode 與課程導讀更新兩課的語法／GPIO 邊界。新課練習入口開啟按鈕導讀；digitalRead、if 及 INPUT_PULLUP 補全提供對應解說，int 延伸至架構導讀。內容仍不給完整練習答案。

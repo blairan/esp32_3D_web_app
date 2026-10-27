@@ -37,7 +37,7 @@ npm run preview
 
 ## 驗證狀態
 
-48 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+60 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -52,3 +52,7 @@ npm run preview
 ## 教學 Wiki
 
 程式練習「查看教學 Wiki」、接線「了解接線原理」及編輯器提示「查閱解說」可開啟對應繁中教學。六篇內建文章涵蓋 GPIO、LED／電阻、setup／loop 與三種白名單函式，只提供概念短例子，不提供完整 Blink 解答。桌面側邊閱讀、手機全螢幕；關閉後保留原程式、接線、視角與執行狀態。設計與驗證限制見 [教學 Wiki 紀錄](docs/teaching-wiki.md)。
+
+## 第二組專題：按鈕控制 LED
+
+從「學習專題」選擇按鈕課，或開啟 `?lesson=button-led#code`。GPIO18 使用 INPUT_PULLUP、四腳常開按鈕接 GND，LED 沿用 GPIO23 與 220 Ω。支援按住／保持按下、digitalRead 與受限 if／else；請自行完成按住亮、放開滅。切換專題前會保護未保存工作，原閃爍課仍可選。補全與 Wiki 隨課程提供對應提示，Wiki 共九篇。契約、限制與驗證見 [按鈕課程](docs/button-lesson.md)。

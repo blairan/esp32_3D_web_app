@@ -14,14 +14,15 @@ function tick(){
   try{scope.postMessage({type:'snapshot',revision,snapshot:runtime.advanceTo(runtime.snapshot().timeMs+50)});timer=setTimeout(tick,50);}catch(error){fail(error);}
 }
 scope.onmessage=({data})=>{
-  revision=data.revision;
+  if(data.revision<revision)return;revision=data.revision;
   try{
+    if(data.type==='input'){runtime?.setInput(data.input);return;}
     if(data.type==='pause'){running=false;cancelTimer();return;}
     if(data.type==='resume'){
-      if(!runtime||running)return;running=true;
+      if(!runtime||running)return;runtime.setInput(data.input);running=true;
       scope.postMessage({type:'snapshot',revision,snapshot:runtime.snapshot()});timer=setTimeout(tick,50);return;
     }
-    running=false;cancelTimer();runtime=new ProgramRuntime(parseProgram(data.source));
+    running=false;cancelTimer();runtime=new ProgramRuntime(parseProgram(data.source,data.lessonId),data.input);
     const snapshot=runtime.advanceTo(0);running=true;scope.postMessage({type:'snapshot',revision,snapshot});timer=setTimeout(tick,50);
   }catch(error){fail(error);}
 };

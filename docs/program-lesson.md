@@ -1,6 +1,8 @@
-# Sprint 4：限定 Arduino Blink 契約 v0.2
+# Sprint 4：限定 Arduino Blink 契約 v0.3
 
 日期：2026-10-27（Asia/Taipei）。使用者要求加入程式碼功能；本版沿用既有 GPIO23、220 Ω、單顆 LED 與 GitHub Pages 試用版，沒有加入任意 C/C++ 編譯、韌體燒錄或硬體連線。
+
+本文既有語法與 GPIO23 限制描述「LED 閃爍」課；新增按鈕專題的 INPUT_PULLUP、digitalRead、if／else、區塊作用域及 Worker 輸入契約詳見 [按鈕課程](button-lesson.md)。兩課都從空架構開始，不提供完整答案。
 
 ## 操作與練習
 

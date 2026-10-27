@@ -1,3 +1,4 @@
+import type {LessonId} from '../lessons';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -11,17 +12,18 @@ interface SceneProps {
   selectedId: string; resetKey: number; simple: boolean;
   zoomCommand: { direction: 1 | -1; sequence: number } | null;
   onSelect: (id: string) => void;
-  accent:string;flow:boolean;reducedMotion:boolean;
-  lesson?: { wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
+  onButtonPress?:(down:boolean)=>void;accent:string;flow:boolean;reducedMotion:boolean;
+  lesson?: {id:LessonId;pressed:boolean; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
 }
-export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion }: SceneProps) {
+export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion,onButtonPress }: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
   const api = useRef<{ select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void; setAccent:(value:string)=>void;setEffects:()=>void;circuit?: ReturnType<typeof createCircuitScene> } | null>(null);
+  const pressCallback=useRef(onButtonPress);pressCallback.current=onButtonPress;
   const selectCallback = useRef(onSelect);
   const initialSelected = useRef(selectedId);
   const currentLesson = useRef(lesson);
   const appearanceRef=useRef({accent,flow,reducedMotion,simple});
-  const lessonMode = Boolean(lesson);
+  const lessonMode = Boolean(lesson);const lessonId=lesson?.id??'blink';
   const currentSimple = useRef(simple);
   const [sceneVersion, setSceneVersion] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -195,53 +197,61 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     }, simplify(value) { details.visible = !value; renderer.setPixelRatio(value ? 1 : Math.min(window.devicePixelRatio, 1.75)); resize(); } };
     api.current.simplify(currentSimple.current);
     if (lessonMode) {
-      const circuit = createCircuitScene(); scene.add(circuit.group); hitboxes.push(...circuit.hitboxes); api.current.circuit = circuit;api.current.setEffects();
-      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending); requestRender();
+      const circuit = createCircuitScene(lessonId); scene.add(circuit.group); hitboxes.push(...circuit.hitboxes); api.current.circuit = circuit;api.current.setEffects();
+      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending,value.pressed); requestRender();
     }
     const raycaster = new THREE.Raycaster();
     const activePointers = new Set<number>();
-    let down: { x: number; y: number; id: number; moved: boolean; multi: boolean } | null = null;
+    let down: { x: number; y: number; id: number; moved: boolean; multi: boolean;press:boolean } | null = null;
     const pointerDown = (e: PointerEvent) => {
       activePointers.add(e.pointerId);
-      if (activePointers.size > 1) { if (down) down.multi = true; return; }
+      if (activePointers.size > 1) { if (down) down.multi = true;pressCallback.current?.(false);controls.enabled=true;return; }
       if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey) { down = null; return; }
-      if (e.button === 0) down = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false, multi: false };
+      if (e.button === 0){
+        const rect=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);
+        const press=raycaster.intersectObjects(hitboxes)[0]?.object.userData.pinId==='button:press';
+        down = {x:e.clientX,y:e.clientY,id:e.pointerId,moved:false,multi:false,press};
+        if(press){e.preventDefault();e.stopPropagation();controls.enabled=false;canvas.setPointerCapture(e.pointerId);pressCallback.current?.(true);}
+      }
     };
     const pointerMove = (e: PointerEvent) => {
+      if(down?.press&&(e.shiftKey||e.ctrlKey||e.metaKey||Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)){pressCallback.current?.(false);down.moved=true;}
       if (down && (e.shiftKey || e.ctrlKey || e.metaKey || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6)) down.moved = true;
     };
     const pointerUp = (e: PointerEvent) => {
       activePointers.delete(e.pointerId);
       if (!down || e.pointerId !== down.id) return;
       const start = down; down = null;
+      if(start.press){pressCallback.current?.(false);controls.enabled=true;return;}
       if (e.shiftKey || e.ctrlKey || e.metaKey || start.multi || start.moved || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
       const rect = canvas.getBoundingClientRect();
       raycaster.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), camera);
       const hit = raycaster.intersectObjects(hitboxes)[0];
-      if (hit) selectCallback.current(hit.object.userData.pinId as string);
+      if (hit&&hit.object.userData.pinId!=='button:press') selectCallback.current(hit.object.userData.pinId as string);
     };
-    const cancel = (e: PointerEvent) => { activePointers.delete(e.pointerId); down = null; };
+    const cancel = (e: PointerEvent) => { activePointers.delete(e.pointerId); down = null;pressCallback.current?.(false);controls.enabled=true; };
     const contextLost = (e: Event) => { e.preventDefault(); contextAvailable = false; cancelAnimationFrame(frame); frame = 0; setStatus('error'); };
-    const visibility=()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;}else requestRender();};document.addEventListener('visibilitychange',visibility);
-    canvas.addEventListener('pointerdown', pointerDown);
+    const releasePress=()=>{down=null;activePointers.clear();pressCallback.current?.(false);controls.enabled=true;};window.addEventListener('blur',releasePress);
+    const visibility=()=>{if(document.hidden){releasePress();cancelAnimationFrame(frame);frame=0;}else requestRender();};document.addEventListener('visibilitychange',visibility);
+    canvas.addEventListener('pointerdown', pointerDown,true);
     canvas.addEventListener('pointermove', pointerMove);
     canvas.addEventListener('pointerup', pointerUp);
-    canvas.addEventListener('pointercancel', cancel);
+    canvas.addEventListener('pointercancel', cancel);canvas.addEventListener('lostpointercapture',cancel);
     canvas.addEventListener('webglcontextlost', contextLost);
     setStatus('ready');
     return () => {
       alive = false; cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',visibility); observer.disconnect(); controls.dispose(); api.current?.circuit?.dispose(); api.current = null;
-      canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointermove', pointerMove);
-      canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('pointercancel', cancel); canvas.removeEventListener('webglcontextlost', contextLost);
+      window.removeEventListener('blur',releasePress);canvas.removeEventListener('pointerdown', pointerDown,true); canvas.removeEventListener('pointermove', pointerMove);
+      canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('pointercancel', cancel);canvas.removeEventListener('lostpointercapture',cancel); canvas.removeEventListener('webglcontextlost', contextLost);
       scene.traverse(obj => { if (obj instanceof THREE.Mesh) obj.geometry.dispose(); });
       materials.forEach(mat => mat.dispose()); textures.forEach(texture => texture.dispose()); environment?.dispose();renderer.dispose(); if (contextAvailable) renderer.forceContextLoss(); canvas.remove();
     };
-  }, [sceneVersion, lessonMode]);
+  }, [sceneVersion, lessonMode,lessonId]);
   useEffect(() => { initialSelected.current = selectedId; api.current?.select(selectedId); }, [selectedId]);
   useEffect(() => { api.current?.reset(); }, [resetKey]);
   useEffect(() => { currentSimple.current = simple;appearanceRef.current.simple=simple; api.current?.simplify(simple);api.current?.setEffects(); }, [simple]);
   useEffect(() => { if (zoomCommand) api.current?.zoom(zoomCommand.direction); }, [zoomCommand]);
-  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
+  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
   useEffect(()=>{appearanceRef.current={accent,flow,reducedMotion,simple};api.current?.setAccent(accent);},[accent,flow,reducedMotion,simple]);
   return <><div className="scene-host" ref={host} data-scene-status={status} />{status !== 'ready' && <div className="scene-message" role="status">{status === 'loading' ? '正在準備 3D 開發板…' : <><strong>目前無法顯示 3D 模型</strong><span>請確認瀏覽器支援 WebGL 並啟用硬體加速。你仍可使用下方清單探索全部接腳。</span><button onClick={() => setSceneVersion(version => version + 1)}>重試 3D 模型</button></>}</div>}</>;
 }

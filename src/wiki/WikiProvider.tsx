@@ -24,7 +24,7 @@ function WikiPanel({history,onNavigate,onBack,onClose}:{history:ArticleId[];onNa
   }}>
   <header className="wiki-header"><span><BookOpen size={19}/>教學 Wiki</span><div><button type="button" aria-label="返回上一篇" disabled={history.length<2} onClick={onBack}><ArrowLeft size={17}/>返回</button><button type="button" aria-label="關閉教學 Wiki" onClick={onClose}><X size={19}/></button></div></header>
   <div className="wiki-body" ref={body}>
-   <details className="wiki-directory"><summary>文章目錄 · 六個入門主題</summary><nav aria-label="Wiki 文章目錄">{articles.map(item=><button type="button" key={item.id} aria-current={item.id===article.id?'page':undefined} onClick={()=>onNavigate(item.id)}>{item.title}</button>)}</nav></details>
+   <details className="wiki-directory"><summary>文章目錄 · {articles.length} 個入門主題</summary><nav aria-label="Wiki 文章目錄">{articles.map(item=><button type="button" key={item.id} aria-current={item.id===article.id?'page':undefined} onClick={()=>onNavigate(item.id)}>{item.title}</button>)}</nav></details>
    <article data-wiki-article={article.id}><p className="wiki-kicker">ESP32 入門筆記</p><h2 id="wiki-title" tabIndex={-1} ref={heading}>{article.title}</h2><p className="wiki-summary">{article.summary}</p>
    {article.sections.map(section=><section key={section.title}><h3>{section.title}</h3><p>{section.text}</p></section>)}
    <section><h3>一個小例子</h3><pre><code>{article.example}</code></pre><p>{article.exampleNote}</p></section>
