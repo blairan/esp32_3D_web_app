@@ -55,4 +55,6 @@ npm run preview
 
 ## 第二組專題：按鈕控制 LED
 
-從「學習專題」選擇按鈕課，或開啟 `?lesson=button-led#code`。GPIO18 使用 INPUT_PULLUP、四腳常開按鈕接 GND，LED 沿用 GPIO23 與 220 Ω。支援按住／保持按下、digitalRead 與受限 if／else；請自行完成按住亮、放開滅。切換專題前會保護未保存工作，原閃爍課仍可選。補全與 Wiki 隨課程提供對應提示，Wiki 共九篇。契約、限制與驗證見 [按鈕課程](docs/button-lesson.md)。
+從右上「學習專題」下拉選單選擇按鈕課，或開啟 `?lesson=button-led#code`。GPIO18 使用 INPUT_PULLUP、四腳常開按鈕接 GND，LED 沿用 GPIO23 與 220 Ω。支援按住／保持按下、digitalRead 與受限 if／else；請自行完成按住亮、放開滅。切換專題前會保護未保存工作，原閃爍課仍可選。補全與 Wiki 隨課程提供對應提示，Wiki 共九篇。契約、限制與驗證見 [按鈕課程](docs/button-lesson.md)。
+
+右上導覽依序為接腳探索、學習專題與程式練習；「LED 接線」已收進學習專題下拉選單，會開啟目前所選專題的接線頁。
