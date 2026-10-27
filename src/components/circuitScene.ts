@@ -33,7 +33,7 @@ export function createCircuitScene() {
   }
   function text(content:string,x:number,y:number,width:number,height=2) {
     const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
-    const context=canvas.getContext('2d')!;context.fillStyle='#43576b';context.textAlign='center';context.textBaseline='middle';context.font='600 80px Arial, sans-serif';context.fillText(content,256,64);
+    const context=canvas.getContext('2d')!;context.fillStyle='rgba(255,255,255,.92)';context.roundRect(16,8,480,112,24);context.fill();context.fillStyle='#43576b';context.textAlign='center';context.textBaseline='middle';context.font='600 80px Arial, sans-serif';context.fillText(content,256,64);
     const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;textures.push(map);
     const material=new THREE.MeshBasicMaterial({map,transparent:true,depthWrite:false});materials.push(material);
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);mesh.position.set(x,y,1);group.add(mesh);

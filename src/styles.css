@@ -34,3 +34,23 @@
 @font-face{font-family:"Lab Sans TC";src:url('./assets/lab-sans-tc.woff2') format('woff2');font-style:normal;font-weight:100 900;font-display:swap}:root{font-family:"Lab Sans TC","Microsoft JhengHei",system-ui,sans-serif}.brand{letter-spacing:-.5px}.intro h1{font-weight:750;letter-spacing:-1px}
 @media(max-width:760px){.workbench,.code-workbench{grid-template-columns:minmax(0,1fr)}.inspector{min-width:0}}
 @media(max-width:360px){.circuit-flow{gap:6px}.circuit-flow>span{font-size:10px;padding:6px}}
+
+/* Background preferences are independent of the accent and scene state. */
+:root{background:var(--page-bg,#f4f6fa);color:var(--page-ink,#132037)}
+.intro p,.app-footer{color:var(--page-muted,#69758a)}
+.inspector,.directory,.connection-editor{background:var(--panel-bg,#fff);color:var(--panel-ink,#132037)}
+:is(.inspector,.directory,.connection-editor) :is(h2,h3,h4,.properties dd,.row-label strong){color:var(--panel-ink,#132037)}
+:is(.inspector,.directory,.connection-editor) :is(.eyebrow,.selection-heading>p,.properties dt,.secondary,.pin-note p,.pin-note .restriction,.source-link,.directory-heading p,.legend li,.row-label span,.pin-number,.lesson-intro,.lesson-steps li,.lesson-disclaimer,.program-title p,.program-help,.runtime-summary,.gpio-readout,.program-syntax,.program-syntax p,.program-trace,.program-trace p,.program-disclaimer,.connection-heading p,.terminal-group p,.wire-list li>span,.empty-wires,.connection-notice){color:var(--panel-muted,#69758a)}
+:is(.learning-note,.circuit-feedback,.program-wiring,.program-error) :is(h3,h4,p){color:inherit}
+.viewer{background:var(--canvas-bg,#eaf0f8);color:var(--canvas-ink,#132037)}
+.viewer-toolbar p,.mouse-help,.current-indicator,.current-indicator small{color:var(--canvas-muted,#69758a)}
+.background-colors{border:0;border-top:1px solid #e0e6ef;margin:17px 0 0;padding:14px 0 0;min-width:0}
+.background-colors legend{float:left;width:100%;font-size:12px;font-weight:600;color:#33465f;margin-bottom:2px}
+.background-colors .custom-color{justify-content:space-between;margin-top:10px;gap:5px}.background-colors input{margin-left:auto}.background-colors code{min-width:65px}
+.restore-backgrounds{margin-top:12px;padding:7px 10px;background:#f4f6fa;border:1px solid #dce3ed;border-radius:5px;font-size:11px;color:#47566b}
+.appearance-menu{max-height:calc(100dvh - 95px);overflow-y:auto;color:#132037}
+.app-header{color:#132037}.viewer-toolbar h2{color:var(--canvas-ink,#132037)}.current-indicator.conducting{color:var(--canvas-ink,#132037)}
+.background-colors legend{float:none;width:auto;padding:0 6px 0 0}.background-colors .custom-color{clear:both;white-space:nowrap}
+.inspector :is(.learning-note,.circuit-feedback,.program-wiring,.program-error) :is(h3,h4,p){color:inherit}
+.inspector :is(.lesson-steps strong,.lesson-eyebrow,.led-status>span),.connection-editor :is(.terminal-groups>section>p,.other-pins,.other-pins>p){color:var(--panel-muted,#69758a)}
+.inspector .eyebrow{color:var(--panel-muted,#69758a)}
