@@ -42,3 +42,18 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - `npm run build` 與原有 4 項資料測試通過。Playwright／Chromium 的原有 14 項操作流程檢查通過；本輪另有 9 項檢查（含頁面識別、鍵盤縮放、縮放上限、立即重設、連續復原、啟動失敗後復原、窄螢幕與 console）通過。
 - 1280×720、390×844 截圖已檢視；正常流程與 context 復原無 console warning/error 或未處理例外。Browser 插件未提供，因此使用現有 Playwright／Chromium 軟體 WebGL；未當成 Acer 實機效能測試。
 - 截圖與臨時驗證腳本仍在 /tmp，不是長期版本資產。尚未推送 GitHub，尚未建立或發布 Site。其餘未完成項維持上節所列。
+
+
+## GitHub Pages 發布進度
+
+使用者已授權「用 GitHub Pages 發布試用版」。程式、文件及 `.github/workflows/pages.yml` 已成功推送至 `blairan/esp32_3D_web_app` 的 main 分支（首次提交 b67f1fb）。先前各節「尚未推送／未授權發布」為歷史狀態，現在以本節為準。
+
+本地 4 項資料測試與 production build 通過。GitHub Actions 使用 Node 24，執行 npm ci、npm test、npm run build，透過官方 upload-pages-artifact / configure-pages / deploy-pages 發布 dist。保留 Vite 相對資產路徑，未提交 node_modules 或 dist。
+
+阻礙：此執行環境對 api.github.com 與 blairan.github.io 的請求均被代理 403 拒絕；匿名 GitHub Actions 頁面為 404，無法以此判定儲存庫可見性或 workflow 狀態。既有注入的 GH_TOKEN 變數存在，但 API 請求在網路層即遭拒，不要求使用者在對話提供憑證。
+
+已保存環境網路草稿，於原有 Espressif 自訂網域以外新增 api.github.com、blairan.github.io。保存不是套用或發布雲端環境。
+
+下一步：儲存庫 Settings → Pages → Source 選 GitHub Actions；再至 Actions → Publish GitHub Pages → Run workflow（main）。若使用者已完成，確認 deployment 的 page_url 與公開頁面載入，才能宣布試用網址可用。若要由雲端代查部署結果，環境網路草稿也需檢閱、儲存並發布後才能重試管理 API／公開網址。
+
+發布狀態：**程式與工作流程已推送，公開網站是否部署成功尚未確認**。沒有建立 PR，也未改動儲存庫可見性或宣稱 GitHub Pages 已啟用。

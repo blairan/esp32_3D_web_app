@@ -41,4 +41,4 @@ LED 接線、Arduino/Blink、Worker 模擬尚未實作。使用者已授權 GitH
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產 gzip 約 0.21 MB，低於 5 MB 目標。
 
-來源與變更理由見 `docs/board-decision-v0.2.md`；接續狀態見 `docs/development-handoff.md`。檔案在目前雲端工作區；尚未推送遠端版本庫，不能宣稱跨任務永久保存。
+來源與變更理由見 `docs/board-decision-v0.2.md`；接續狀態見 `docs/development-handoff.md`。原始碼與文件已推送 GitHub 的 main 分支；目前 GitHub Pages 的啟用與遠端部署成功狀態尚待確認。
