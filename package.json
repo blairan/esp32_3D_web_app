@@ -7,13 +7,20 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --experimental-strip-types --test src/board.test.ts src/circuit.test.ts src/current.test.ts src/appearance.test.ts src/program/program.test.ts"
+    "test": "node --experimental-strip-types --test src/board.test.ts src/circuit.test.ts src/current.test.ts src/appearance.test.ts src/program/program.test.ts src/program/completion.test.ts"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "codemirror": "^6.0.2",
+    "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.180.0",
-    "lucide-react": "^0.468.0"
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

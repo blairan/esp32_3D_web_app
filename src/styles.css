@@ -54,3 +54,5 @@
 .inspector :is(.learning-note,.circuit-feedback,.program-wiring,.program-error) :is(h3,h4,p){color:inherit}
 .inspector :is(.lesson-steps strong,.lesson-eyebrow,.led-status>span),.connection-editor :is(.terminal-groups>section>p,.other-pins,.other-pins>p){color:var(--panel-muted,#69758a)}
 .inspector .eyebrow{color:var(--panel-muted,#69758a)}
+.program-editor{border:1px solid #d8e1e9;border-radius:6px;overflow:hidden;min-width:0}.program-editor:focus-within{outline:2px solid var(--accent-ink);outline-offset:1px}.program-editor .cm-editor.cm-focused{outline:none}.program-editor .cm-tooltip-autocomplete{max-width:min(420px,75vw)}.program-editor .cm-tooltip-autocomplete ul{max-width:100%;overflow-x:auto}.practice-goal{font-size:12px;line-height:1.8;padding:12px 0;color:var(--panel-muted,#69758a)}.practice-goal strong{color:var(--panel-ink,#132037)}.practice-goal details{margin-top:6px}.practice-goal summary{cursor:pointer;width:max-content}.practice-goal p{margin-top:4px}
+.parameter-hint{padding:7px 10px;max-width:270px;white-space:normal;font-size:12px;line-height:1.7}
