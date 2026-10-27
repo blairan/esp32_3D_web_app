@@ -37,9 +37,9 @@ npm run preview
 
 ## 驗證狀態
 
-46 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+48 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
-這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，壓縮傳輸約 0.4 MB，低於 5 MB 目標。
+這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
 來源與變更理由見 `docs/board-decision-v0.2.md`；接續狀態見 `docs/development-handoff.md`。原始碼與文件已推送 GitHub 的 main 分支；目前 GitHub Pages 的啟用與遠端部署成功狀態尚待確認。
 
@@ -48,3 +48,7 @@ npm run preview
 右上「外觀」可選深藍、紫羅蘭、暖橙、石墨或自訂主色；預設藍色。有效 HIGH 接線會出現慣用電流方向亮點與箭頭，LOW／錯接不顯示。可關閉電流效果，減少動態效果與簡化模式使用靜態箭頭。程式暫停時亮點也會停止。只有外觀偏好會記住在本瀏覽器，程式與接線仍不保存。詳見 [外觀與電流紀錄](docs/appearance-current.md)。
 
 程式練習現預設空白 setup／loop 基本架構，沒有預填完整答案。CodeMirror 編輯器提供單行白名單補全、參數提示、語法上色與括號／縮排；輸入名稱或 Ctrl＋Space 查看建議，Enter 接受、Tab 跳參數。可自行完成後執行與觀察 LED。
+
+## 教學 Wiki
+
+程式練習「查看教學 Wiki」、接線「了解接線原理」及編輯器提示「查閱解說」可開啟對應繁中教學。六篇內建文章涵蓋 GPIO、LED／電阻、setup／loop 與三種白名單函式，只提供概念短例子，不提供完整 Blink 解答。桌面側邊閱讀、手機全螢幕；關閉後保留原程式、接線、視角與執行狀態。設計與驗證限制見 [教學 Wiki 紀錄](docs/teaching-wiki.md)。

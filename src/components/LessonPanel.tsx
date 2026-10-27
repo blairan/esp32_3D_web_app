@@ -1,10 +1,14 @@
+import {useWiki} from '../wiki/WikiProvider';
+import {topicArticles} from '../wiki/articles';
 import { BookOpen, CheckCircle2, Trash2, Lightbulb, TriangleAlert, ArrowRight } from 'lucide-react';
 import type { CircuitAction, CircuitAnalysis, CircuitState } from '../circuit';
 interface Props {state:CircuitState;analysis:CircuitAnalysis;dispatch:(action:CircuitAction)=>void}
 export default function LessonPanel({state,analysis,dispatch}:Props) {
+  const openWiki=useWiki();
   return <aside className="inspector lesson-inspector" aria-label="LED 教學與輸出控制">
     <p className="lesson-index"><span>01</span> / 外接 LED</p>
     <h2>完成第一個電路</h2><p className="lesson-intro">依照步驟接線，再用 HIGH／LOW 控制亮滅。</p>
+    <button type="button" className="wiki-link lesson-wiki-link" onClick={event=>openWiki(topicArticles.led,event.currentTarget)}><BookOpen size={14}/>了解接線原理</button>
     <div className="circuit-flow" aria-label="GPIO23 經 220 歐姆電阻、LED 連接 GND"><span>GPIO23</span><ArrowRight size={14}/><span>220 Ω</span><ArrowRight size={14}/><Lightbulb size={23}/><ArrowRight size={14}/><span>GND</span></div>
     <ol className="lesson-steps"><li><span>將 GPIO23 連到電阻的 <strong>A 端</strong>。</span></li><li><span>將電阻 <strong>B 端</strong>連到 LED <strong>正極 A+</strong>。</span></li><li><span>將 LED <strong>負極 K−</strong>連到任一 <strong>GND</strong>。</span></li></ol>
     <div className={`circuit-feedback ${analysis.valid?'valid':analysis.code==='empty'?'empty':'invalid'}`} aria-live="polite" aria-atomic="true" data-circuit-code={analysis.code}>

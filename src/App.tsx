@@ -30,7 +30,7 @@ export default function App() {
   const pickTerminal=useCallback((id:string)=>{if(pinById.has(id))setSelectedId(id);dispatch({type:'pick',terminal:id});},[]);
   const switchMode=(value:'explore'|'led'|'code')=>{if(mode==='code'&&value!=='code')runner.stop();if(mode!=='code'&&value==='code'){runner.reset();dispatch({type:'level',level:'LOW'});}setMode(value);window.history.replaceState(null,'',`#${value}`);};
   useEffect(()=>{
-    const cancel=(event:KeyboardEvent)=>{if(event.key==='Escape')dispatch({type:'cancel'});};
+    const cancel=(event:KeyboardEvent)=>{if(event.key==='Escape'&&!document.querySelector('.wiki-dialog[open]'))dispatch({type:'cancel'});};
     window.addEventListener('keydown',cancel);return()=>window.removeEventListener('keydown',cancel);
   },[]);
   return <>
