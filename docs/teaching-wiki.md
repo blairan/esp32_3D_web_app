@@ -29,3 +29,7 @@ WikiProvider 保存獨立文章歷史，透過穩定 context callback 開啟。A
 ## 第二課擴充
 
 2026-10-27 新增按鈕／INPUT_PULLUP、digitalRead、if／else 三篇，總數九篇；目錄數量由資料推導。原 GPIO、pinMode 與課程導讀更新兩課的語法／GPIO 邊界。新課練習入口開啟按鈕導讀；digitalRead、if 及 INPUT_PULLUP 補全提供對應解說，int 延伸至架構導讀。內容仍不給完整練習答案。
+
+## 第三課擴充
+
+新增雙 LED 獨立輸出／時序文章，總數十篇；練習與手動接線都直達，原 GPIO／pinMode／digitalWrite 文補充 GPIO22 的課程範圍。Wiki 提供概念與短例子，完整參考解法仍由程式練習主動展開。

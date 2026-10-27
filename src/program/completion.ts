@@ -16,13 +16,14 @@ export function declaredVariables(before:string):string[]{
  return [...new Set(scopes.flat())];
 }
 export function suggestionsFor(lessonId:LessonId){
+ if(lessonId==='dual-led')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 可用 GPIO23／GPIO22'}:item);
  if(lessonId==='blink')return lessonSuggestions;
  return [...lessonSuggestions.map(item=>item.label==='pinMode'?{...item,detail:'GPIO23 OUTPUT／GPIO18 INPUT_PULLUP',template:'pinMode(${1:18}, ${2:INPUT_PULLUP});'}:item),
  {label:'digitalRead',detail:'digitalRead(pin) · 用於 int 初始值或 if 比較',template:'digitalRead(${1:18})',type:'function'},
  {label:'INPUT_PULLUP',detail:'內建上拉輸入，按下為 LOW',template:'INPUT_PULLUP',type:'constant'},
  {label:'if',detail:'if (比較) { … } else { … } · 單一條件分支',template:'if (${1:buttonState} == ${2:LOW}) {\n  ${3}\n} else {\n  ${4}\n}',type:'keyword'}];
 }
-export function scaffoldFor(lessonId:LessonId){return lessonId==='blink'?programScaffold:buttonScaffold;}
+export function scaffoldFor(lessonId:LessonId){return lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
 const buttonScaffold=`void setup() {
   // 設定 LED 輸出與按鈕內建上拉
 }
@@ -38,5 +39,14 @@ export const programScaffold=`void setup() {
 
 void loop() {
   // 在這裡練習控制 LED，並安排等待時間
+}
+`;
+
+const dualScaffold=`void setup() {
+  // 分別設定兩個 LED 接腳為輸出
+}
+
+void loop() {
+  // 設定兩顆 LED 狀態、等待，再交換狀態並等待
 }
 `;

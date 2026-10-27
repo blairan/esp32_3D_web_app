@@ -75,3 +75,7 @@ setup 與 loop 各恰好一次，定義先後可互換；全域宣告只能放�
 Blink 使用 HIGH／LOW 各 1000 ms；按鈕使用 GPIO18 INPUT_PULLUP、GPIO23 OUTPUT、每圈 int 讀值、if／else 與分支後 delay(50)。solutions.ts 是顯示程式與測試的共同來源，兩份程式以同一解析器／執行器驗證。複製成功顯示提示；剪貼簿 API 不可用或被拒絕時，聚焦並選取唯讀程式區，提示手動複製，不覆蓋學員程式。瀏覽器選取可能省略最後換行，不影響程式語意。切換課程後答案回到收合狀態。
 
 62 項單元測試及瀏覽器檢查包含預設隱藏、正確課程、複製／失敗降級、編輯器／場景實例保留、直接執行實際顯示的兩份答案、暫停時間／接線不變、320/390px 與無例外。Browser plugin not available，使用 Playwright／Chromium 軟體 WebGL；不宣稱為實機效能測試。
+
+## 第三課多輸出擴充
+
+雙 LED 課使用與閃爍課相同的語法，僅額外允許 GPIO22 OUTPUT。執行器以 outputs 記錄各 GPIO 模式／電位，trace 記錄 gpio，仍保留 GPIO23 的相容欄位。每腳先設 OUTPUT、錯誤／停止清除全部輸出、兩課舊邊界與所有預算保持。第三課標準答案與精確交替時間納入測試，總數 72 項。見 dual-led-lesson.md。

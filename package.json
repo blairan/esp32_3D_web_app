@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --experimental-strip-types --test src/board.test.ts src/circuit.test.ts src/current.test.ts src/appearance.test.ts src/program/program.test.ts src/program/completion.test.ts src/wiki/articles.test.ts src/button-lesson.test.ts src/program/solutions.test.ts"
+    "test": "node --experimental-strip-types --test src/board.test.ts src/circuit.test.ts src/current.test.ts src/appearance.test.ts src/program/program.test.ts src/program/completion.test.ts src/wiki/articles.test.ts src/button-lesson.test.ts src/program/solutions.test.ts src/dual-lesson.test.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",

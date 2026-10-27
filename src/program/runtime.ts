@@ -3,16 +3,17 @@ import { pins } from '../board.ts';
 import { limits, ProgramError } from './language.ts';
 import type { Program, Statement, Expression, SourceLocation, ProgramDiagnostic } from './language.ts';
 export type InputLevel='HIGH'|'LOW'|null;
-export interface TraceEntry {timeMs:number;level:'HIGH'|'LOW';line:number}
-export interface ProgramSnapshot {timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
+export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';line:number}
+export interface ProgramSnapshot {outputs:Record<number,{enabled:boolean;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
 export type RunStatus='idle'|'starting'|'running'|'paused'|'stopped'|'error';
 export interface ProgramState extends ProgramSnapshot {status:RunStatus;diagnostic:ProgramDiagnostic|null}
-export const initialProgramState:ProgramState={timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
+export const initialProgramState:ProgramState={outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
 const gpioPins=new Map(pins.filter(pin=>pin.gpio!==null).map(pin=>[pin.gpio!,pin]));
 interface Frame {body:Statement[];pc:number;locals:Map<string,number>}
 export class ProgramRuntime {
  private program:Program;private globals=new Map<string,number>();private frames:Frame[]=[];
  private phase:'setup'|'loop'='setup';private time=0;private waitingUntil:number|null=null;private loopStart=0;
+ private outputs=new Map<number,{enabled:boolean;level:'HIGH'|'LOW'}>();
  private outputEnabled=false;private inputEnabled=false;private input:InputLevel='HIGH';private lastRead:InputLevel=null;
  private level:'HIGH'|'LOW'='LOW';private line=0;private loopCount=0;private operations=0;private trace:TraceEntry[]=[];
  constructor(program:Program,input:InputLevel='HIGH'){this.program=program;this.input=input;for(const statement of program.globals)this.declareVariable(statement,this.globals);this.frames=[this.frame(program.setup)];}
@@ -41,10 +42,11 @@ export class ProgramRuntime {
    if(lessons[this.program.lessonId].inputGPIO===null||gpio!==lessons[this.program.lessonId].inputGPIO)throw new ProgramError('本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
   }else{
    if(pin.category==='input')throw new ProgramError(`GPIO${gpio} 只能輸入，不能設定輸出或驅動 LED。`,at);
-   if(gpio!==lessons[this.program.lessonId].outputGPIO)throw new ProgramError(`本課目前只支援 GPIO23 輸出，GPIO${gpio} 尚未接入模擬。`,at);
+   if(!lessons[this.program.lessonId].outputGPIOs.includes(gpio))throw new ProgramError(`本課目前只支援 ${lessons[this.program.lessonId].outputGPIOs.map(pin=>'GPIO'+pin).join('、')} 輸出，GPIO${gpio} 尚未接入模擬。`,at);
   }
+  return gpio;
  }
- snapshot():ProgramSnapshot{return {timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
+ snapshot():ProgramSnapshot{return {outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
  advanceTo(target:number):ProgramSnapshot {
   if(!Number.isSafeInteger(target)||target<this.time||target>limits.virtualTime)throw new ProgramError('虛擬時間超過上限，請重設後再執行。',this.program.loopAt);
   let tickOperations=0;const started=performance.now();
@@ -62,10 +64,10 @@ export class ProgramRuntime {
    if(++tickOperations>limits.operationsPerTick||++this.operations>limits.totalOperations||performance.now()-started>20)throw new ProgramError('執行預算已用完，程式已停止。請增加 delay 或縮短程式。',statement.at);
    switch(statement.kind){
     case 'declare':this.declareVariable(statement,frame.locals);break;
-    case 'pinMode':this.checkPin(statement.pin,statement.at,statement.mode==='INPUT_PULLUP'?'input':'output');if(statement.mode==='INPUT_PULLUP')this.inputEnabled=true;else this.outputEnabled=true;break;
-    case 'write':
-     this.checkPin(statement.pin,statement.at);if(!this.outputEnabled)throw new ProgramError('請先執行 pinMode(23, OUTPUT)，才能 digitalWrite。',statement.at);
-     this.level=statement.level;this.trace.push({timeMs:this.time,level:this.level,line:this.line});this.trace=this.trace.slice(-8);break;
+    case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode==='INPUT_PULLUP'?'input':'output');if(statement.mode==='INPUT_PULLUP')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===23)this.outputEnabled=true;}break;}
+    case 'write':{
+     const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 digitalWrite。`,statement.at);
+     this.outputs.set(gpio,{enabled:true,level:statement.level});if(gpio===23)this.level=statement.level;this.trace.push({gpio,timeMs:this.time,level:statement.level,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'if':{
      const equal=this.value(statement.left)===this.value(statement.right);const body=(statement.operator==='=='?equal:!equal)?statement.then:statement.otherwise;
      this.frames.push(this.frame(body));break;

@@ -1,3 +1,4 @@
+import DualLessonPanel from './DualLessonPanel';
 import ButtonControl,{type ButtonControlProps} from './ButtonControl';
 import {useWiki} from '../wiki/WikiProvider';
 import {topicArticles} from '../wiki/articles';
@@ -6,6 +7,7 @@ import type { CircuitAction, CircuitAnalysis, CircuitState } from '../circuit';
 interface Props {buttonControl?:ButtonControlProps;state:CircuitState;analysis:CircuitAnalysis;dispatch:(action:CircuitAction)=>void}
 export default function LessonPanel({buttonControl,state,analysis,dispatch}:Props) {
   const openWiki=useWiki();
+  if(state.lessonId==='dual-led')return <DualLessonPanel state={state} analysis={analysis} dispatch={dispatch}/>;
   return <aside className="inspector lesson-inspector" aria-label="LED 教學與輸出控制">
     <p className="lesson-index"><span>01</span> / 外接 LED</p>
     <h2>{buttonControl?'接好 LED 與按鈕':'完成第一個電路'}</h2><p className="lesson-intro">依照步驟接線，再用 HIGH／LOW 控制亮滅。</p>
