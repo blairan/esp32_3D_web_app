@@ -1,0 +1,39 @@
+boardId,pinId,header,position,silkscreen,officialName,gpio,role,restrictions,evidence,verification
+esp32-devkitc-v4-wroom-32e,J2-01,J2,1,3V3,3V3,,power,供電選項互斥；非 GPIO,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-02,J2,2,EN,EN,,enable,晶片使能／重設；非一般 GPIO,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-03,J2,3,VP,VP,36,gpio,只能輸入；無內部上拉下拉,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-04,J2,4,VN,VN,39,gpio,只能輸入；無內部上拉下拉,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-05,J2,5,34,IO34,34,gpio,只能輸入；無內部上拉下拉,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-06,J2,6,35,IO35,35,gpio,只能輸入；無內部上拉下拉,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-07,J2,7,32,IO32,32,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-08,J2,8,33,IO33,33,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-09,J2,9,25,IO25,25,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-10,J2,10,26,IO26,26,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-11,J2,11,27,IO27,27,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-12,J2,12,14,IO14,14,gpio,JTAG 功能共用,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-13,J2,13,12,IO12,12,gpio,啟動綁定腳；reset 電平可能影響啟動；JTAG 功能共用,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-14,J2,14,GND,GND,,ground,非 GPIO,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-15,J2,15,13,IO13,13,gpio,JTAG 功能共用,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-16,J2,16,D2,D2,9,flash_reserved,flash 專用；禁止一般接線與輸出模擬,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-17,J2,17,D3,D3,10,flash_reserved,flash 專用；禁止一般接線與輸出模擬,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-18,J2,18,CMD,CMD,11,flash_reserved,flash 專用；禁止一般接線與輸出模擬,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J2-19,J2,19,5V,5V,,power,供電選項互斥；非 GPIO,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-01,J3,1,GND,GND,,ground,非 GPIO,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-02,J3,2,23,IO23,23,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-03,J3,3,22,IO22,22,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-04,J3,4,TX,TX,1,gpio,UART0 燒錄／除錯共用,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-05,J3,5,RX,RX,3,gpio,UART0 燒錄／除錯共用,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-06,J3,6,21,IO21,21,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-07,J3,7,GND,GND,,ground,非 GPIO,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-08,J3,8,19,IO19,19,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-09,J3,9,18,IO18,18,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-10,J3,10,5,IO5,5,gpio,啟動綁定腳；reset 電平可能影響啟動,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-11,J3,11,17,IO17,17,gpio,限已選 WROOM 模組；不可外推 WROVER,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-12,J3,12,16,IO16,16,gpio,限已選 WROOM 模組；不可外推 WROVER,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-13,J3,13,4,IO4,4,gpio,,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-14,J3,14,0,IO0,0,gpio,啟動綁定腳；reset 電平可能影響啟動,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-15,J3,15,2,IO2,2,gpio,啟動綁定腳；reset 電平可能影響啟動,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-16,J3,16,15,IO15,15,gpio,啟動綁定腳；reset 電平可能影響啟動；JTAG 功能共用,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-17,J3,17,D1,D1,8,flash_reserved,flash 專用；禁止一般接線與輸出模擬,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-18,J3,18,D0,D0,7,flash_reserved,flash 專用；禁止一般接線與輸出模擬,B1+B2+B3,官方資料對照一致；非實測
+esp32-devkitc-v4-wroom-32e,J3-19,J3,19,CLK,CLK,6,flash_reserved,flash 專用；禁止一般接線與輸出模擬,B1+B2+B3,官方資料對照一致；非實測
