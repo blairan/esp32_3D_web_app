@@ -37,7 +37,7 @@
 
 ## 編輯、教材與視覺
 
-預設只有 setup／loop 與概念註解；補全按課程提供 digitalRead、INPUT_PULLUP 及空白 if／else 片段，並保留參數提示。沒有完整控制答案。Wiki 新增按鈕／上拉、digitalRead、if／else 三篇（共九篇），更新原本 GPIO、pinMode 與導讀的課程界線。
+預設只有 setup／loop 與概念註解；補全按課程提供 digitalRead、INPUT_PULLUP 及空白 if／else 片段，並保留參數提示。預設不填入完整控制答案；可另行展開標準答案對照，不會覆蓋自己的程式。Wiki 新增按鈕／上拉、digitalRead、if／else 三篇（共九篇），更新原本 GPIO、pinMode 與導讀的課程界線。
 
 桌面新課模型使用 sticky 工作區，向下閱讀／操作按鈕時仍可觀察模型；手機採單欄。按鈕內部連通、針腳方向與即時電位均有文字，不靠 3D 操作作為唯一入口。模型是簡化示意，不宣稱對應某個商品按鈕的實際腳位與額定；實板請核對元件資料表。
 

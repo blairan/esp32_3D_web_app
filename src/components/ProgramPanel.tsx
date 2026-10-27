@@ -1,3 +1,4 @@
+import ReferenceAnswer from './ReferenceAnswer';
 import type {LessonId} from '../lessons';
 import ButtonControl,{type ButtonControlProps} from './ButtonControl';
 import {useWiki} from '../wiki/WikiProvider';
@@ -25,6 +26,7 @@ export default function ProgramPanel({lessonId,buttonControl,source,state,analys
     <div className="program-title"><div><h2><FileCode2 size={20}/>Arduino 程式練習</h2><p>限定語法 · GPIO23 輸出{lessonId==='button-led'?'／GPIO18 輸入':''}</p></div><button disabled={active} onClick={()=>{if(window.confirm('要清除目前程式，重新建立 setup / loop 架構嗎？'))onScaffold();}}>重建架構</button></div>
     <Suspense fallback={<p>正在載入程式編輯器…</p>}><ProgramEditor lessonId={lessonId} ref={editor} source={source} readOnly={active} line={state.line} error={state.status==='error'} onChange={onChange}/></Suspense>
     <div className="practice-goal"><div className="practice-heading"><strong>練習目標</strong><button type="button" className="wiki-link" onClick={event=>openWiki(lessonId==='button-led'?topicArticles.button:topicArticles.structure,event.currentTarget)}><BookOpen size={14}/>查看教學 Wiki</button></div><p>{lessonId==='button-led'?'設定 GPIO18 內建上拉與 GPIO23 輸出，讀取按鈕電位，用 if／else 讓 LED 按住亮、放開滅，並安排正值等待。請自己完成程式。':'在 setup 設定 GPIO23 輸出，在 loop 讓 LED 亮、等待、熄滅、再等待。請自己完成程式。'}</p><details><summary>需要一點提示？</summary><p>{lessonId==='button-led'?'INPUT_PULLUP 下按下是 LOW。先在 loop 宣告讀值變數，或直接在 if 條件呼叫 digitalRead；每一條會執行的路徑都須有正值 delay。':'先宣告接腳變數；設定模式用 pinMode，改變電位用 digitalWrite，等待用 delay。loop 至少要有一次大於 0 的等待。'}</p></details></div>
+    <ReferenceAnswer key={lessonId} lessonId={lessonId}/>
     {buttonControl?<ButtonControl {...buttonControl}/>:null}
     <div className="program-toolbar"><button className="run-button" onClick={state.status==='paused'?onResume:onStart} disabled={state.status==='running'||state.status==='starting'}><Play size={15}/>{state.status==='paused'?'繼續':'執行'}</button><button onClick={onPause} disabled={state.status!=='running'}><Pause size={15}/>暫停</button><button onClick={onStop} disabled={!active}><Square size={13}/>停止</button><button onClick={onReset}><RotateCcw size={15}/>重設</button></div>
     <p id="program-help" className="program-help">{active?'執行或暫停時鎖定編輯；停止後可修改。':'輸入名稱自動顯示建議；Ctrl＋Space 開啟補全，Enter 接受、Tab 跳參數、Esc 關閉。'}</p>
