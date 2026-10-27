@@ -2,23 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { pins, pinById } from '../board';
+import { createCircuitScene } from './circuitScene';
+import type { CircuitWire } from '../circuit';
 
 interface SceneProps {
   selectedId: string; resetKey: number; simple: boolean;
   zoomCommand: { direction: 1 | -1; sequence: number } | null;
   onSelect: (id: string) => void;
+  lesson?: { wires: CircuitWire[]; lit: boolean; pending: string | null };
 }
-export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect }: SceneProps) {
+export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect, lesson }: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
-  const api = useRef<{ select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void } | null>(null);
+  const api = useRef<{ select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void; circuit?: ReturnType<typeof createCircuitScene> } | null>(null);
   const selectCallback = useRef(onSelect);
   const initialSelected = useRef(selectedId);
+  const currentLesson = useRef(lesson);
+  const lessonMode = Boolean(lesson);
   const currentSimple = useRef(simple);
   const [sceneVersion, setSceneVersion] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   useEffect(() => { selectCallback.current = onSelect; }, [onSelect]);
 
   useEffect(() => {
+    currentLesson.current = lesson;
     const container = host.current!;
     setStatus('loading');
     let renderer: THREE.WebGLRenderer;
@@ -40,8 +46,8 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     controls.enablePan = true;
     controls.screenSpacePanning = true;
     controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-    controls.minDistance = 58;
-    controls.maxDistance = 190;
+    controls.minDistance = lessonMode ? 75 : 58;
+    controls.maxDistance = lessonMode ? 240 : 190;
     controls.rotateSpeed = 0.65;
     controls.zoomSpeed = 0.8;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x59676c, 2.5));
@@ -136,8 +142,8 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     function reset() {
       stopInertia();
       // Portrait framing adapts to a narrow canvas as well as the laptop layout.
-      const distance = camera.aspect < 0.85 ? 125 : 105;
-      camera.position.set(25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(0, 0, 0); controls.update(); requestRender();
+      const distance = lessonMode ? (camera.aspect < 0.85 ? 195 : 130) : (camera.aspect < 0.85 ? 125 : 105);
+      camera.position.set(lessonMode ? 40 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? 14 : 0, 0, 0); controls.update(); requestRender();
     }
     const select = (id: string) => {
       for (const [pid, mesh] of pinMeshes) {
@@ -162,6 +168,10 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       controls.update(); requestRender();
     }, simplify(value) { details.visible = !value; renderer.setPixelRatio(value ? 1 : Math.min(window.devicePixelRatio, 1.75)); resize(); } };
     api.current.simplify(currentSimple.current);
+    if (lessonMode) {
+      const circuit = createCircuitScene(); scene.add(circuit.group); hitboxes.push(...circuit.hitboxes); api.current.circuit = circuit;
+      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending); requestRender();
+    }
     const raycaster = new THREE.Raycaster();
     const activePointers = new Set<number>();
     let down: { x: number; y: number; id: number; moved: boolean; multi: boolean } | null = null;
@@ -193,16 +203,17 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     canvas.addEventListener('webglcontextlost', contextLost);
     setStatus('ready');
     return () => {
-      alive = false; cancelAnimationFrame(frame); observer.disconnect(); controls.dispose(); api.current = null;
+      alive = false; cancelAnimationFrame(frame); observer.disconnect(); controls.dispose(); api.current?.circuit?.dispose(); api.current = null;
       canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointermove', pointerMove);
       canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('pointercancel', cancel); canvas.removeEventListener('webglcontextlost', contextLost);
       scene.traverse(obj => { if (obj instanceof THREE.Mesh) obj.geometry.dispose(); });
       materials.forEach(mat => mat.dispose()); textures.forEach(texture => texture.dispose()); renderer.dispose(); if (contextAvailable) renderer.forceContextLoss(); canvas.remove();
     };
-  }, [sceneVersion]);
+  }, [sceneVersion, lessonMode]);
   useEffect(() => { initialSelected.current = selectedId; api.current?.select(selectedId); }, [selectedId]);
   useEffect(() => { api.current?.reset(); }, [resetKey]);
   useEffect(() => { currentSimple.current = simple; api.current?.simplify(simple); }, [simple]);
   useEffect(() => { if (zoomCommand) api.current?.zoom(zoomCommand.direction); }, [zoomCommand]);
+  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending); api.current?.select(selectedId); } }, [lesson, selectedId]);
   return <><div className="scene-host" ref={host} data-scene-status={status} />{status !== 'ready' && <div className="scene-message" role="status">{status === 'loading' ? '正在準備 3D 開發板…' : <><strong>目前無法顯示 3D 模型</strong><span>請確認瀏覽器支援 WebGL 並啟用硬體加速。你仍可使用下方清單探索全部接腳。</span><button onClick={() => setSceneVersion(version => version + 1)}>重試 3D 模型</button></>}</div>}</>;
 }

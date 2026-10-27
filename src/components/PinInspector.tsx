@@ -18,7 +18,7 @@ export default function PinInspector({ pin }: { pin: Pin }) {
       <div><dt>邏輯電壓</dt><dd>{pin.gpio !== null ? '3.3 V 邏輯' : pin.role === 'power' ? `${pin.silkscreen === '3V3' ? '3.3' : '5'} V 電源腳` : '非一般 GPIO'}</dd></div>
     </dl>
     <section className="pin-note"><h4>{pin.category === 'reserved' || pin.category === 'input' || pin.category === 'special' ? <TriangleAlert size={16} /> : null}使用提醒</h4><p>{descriptionFor(pin)}</p>{pin.restrictions && <p className="restriction">{pin.restrictions}</p>}</section>
-    {pin.gpio === 23 ? <div className="learning-note"><Lightbulb size={23}/><div><h4>從這裡開始</h4><p>GPIO23 是後續外接 LED 課程的接腳。先認識位置，再學習電阻、極性與接線。</p><span>目前為接腳探索，尚未執行電路模擬。</span></div></div> : null}
+    {pin.gpio === 23 ? <div className="learning-note"><Lightbulb size={23}/><div><h4>從這裡開始</h4><p>GPIO23 是外接 LED 課程的接腳。切換右上方「LED 接線」，就能學習電阻、極性與接線。</p><span>目前為接腳探索；LED 教學在另一個分頁操作。</span></div></div> : null}
     <a className="source-link" href={board.source} target="_blank" rel="noreferrer">查閱官方接腳文件 <ArrowUpRight size={14}/></a>
   </aside>;
 }

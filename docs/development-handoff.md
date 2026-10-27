@@ -68,3 +68,12 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 驗證：4 項資料測試及 production build 通過；Playwright／Chromium 以 1280×720、390×844 驗證右鍵平移、Shift 平移、平移後旋轉／縮放、移動途中立即重設、修飾鍵點擊不誤選、普通 3D 點選、操作說明與無橫向溢位。原有 14 項操作流程回歸也通過，無 console error 或未處理例外。Browser 插件未提供，使用既有 Playwright；仍非 Acer 實體觸控板效能量測。
 
 部署前確認：官方 GitHub API 已可讀取，Pages 的 build_type 為 workflow，前次部署成功；使用者也已確認網站可操作，先前「尚無法存取 API／Pages 未啟用」已是歷史狀態。這次更新推送後需以最新 workflow 結果與公開頁面確認上線。
+
+
+## Sprint 3：LED 接線教學初版
+
+使用者已要求新增外接 LED 教學並接續開發。新增 LED 接線分頁、單顆 LED／220 Ω 電阻／導線 3D 幾何、兩端點接線與鍵盤替代操作、獨立刪線及清空、範例、固定 OUTPUT 的 HIGH／LOW，並用純函式圖分析判斷極性、限流、斷路、短路及不支援腳。原 38 Pin 探索與相機操作保留。完整規則與資料分層見 [教學契約](led-lesson.md)。
+
+已完成 18 項資料／電路測試、18 項課程瀏覽器檢查；主流程無 console error／未處理例外，WebGL 降級可使用接線控制。正式實機效能、真實觸控板仍待使用者確認。Arduino／Blink 編輯與虛擬時鐘未實作，不得將手動電位控制標成程式模擬。接線僅存本頁記憶體，沒有跨裝置進度同步。
+
+本次將沿既有 main → GitHub Actions → Pages 流程發布；部署與公開資產需以本次最新 workflow 狀態確認。先前章節「LED 接線未開始」已為歷史狀態。
