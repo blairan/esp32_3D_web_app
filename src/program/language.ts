@@ -23,7 +23,7 @@ export type Statement =
  | {kind:'delay';duration:Expression;at:SourceLocation}
  | {kind:'if';left:Expression;right:Expression;operator:'=='|'!='|'>'|'<'|'>='|'<=';then:Statement[];otherwise:Statement[];at:SourceLocation};
 export interface Program { lessonId:LessonId;servoName?:string;dht?:{name:string;pin:Expression};oledName?:string;globals:Extract<Statement,{kind:'declare'}>[];setup:Statement[];loop:Statement[];loopAt:SourceLocation }
-const reserved=new Set(['DHT','DHT22','Adafruit_SSD1306','Wire','SSD1306_SWITCHCAPVCC','SSD1306_WHITE','pulseIn','delayMicroseconds','Servo','analogRead','analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
+const reserved=new Set(['TM1637Display','DHT','DHT22','Adafruit_SSD1306','Wire','SSD1306_SWITCHCAPVCC','SSD1306_WHITE','pulseIn','delayMicroseconds','Servo','analogRead','analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
 function tokenize(source:string,allowStrings=false):Token[] {
   if(source.length>limits.source)throw new ProgramError(`程式最多 ${limits.source} 個字元。`,{line:1,column:1});
   if(source.split('\n').length>limits.lines)throw new ProgramError(`程式最多 ${limits.lines} 行。`,{line:limits.lines+1,column:1});
@@ -56,7 +56,7 @@ function tokenize(source:string,allowStrings=false):Token[] {
 }
 export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
   const advanced=hasExtendedSyntax(lessonId);
-  const tokens=tokenize(source,lessonId==='oled-i2c');let index=0,count=0;let servoName:string|undefined,oledName:string|undefined,dht:{name:string;pin:Expression}|undefined;
+  const tokens=tokenize(source,(lessonId==='oled-i2c'||lessonId==='environment-lab'));let index=0,count=0;let digitsName:string|undefined;let servoName:string|undefined,oledName:string|undefined,dht:{name:string;pin:Expression}|undefined;
   const peek=()=>tokens[index];const take=()=>tokens[index++];
   const is=(text:string)=>peek().kind!=='string'&&peek().text===text;
   const expect=(text:string)=>{const token=take();if(token.kind==='string'||token.text!==text)throw new ProgramError(`預期「${text}」${token.kind==='end'?'，但程式已結束。':`，目前是「${token.text}」。`}`,token);return token;};
@@ -68,7 +68,7 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
       return {kind:'integer',value,at:token};
     }
     if(!negative&&token.kind==='name'&&allowConstants&&(token.text==='HIGH'||token.text==='LOW')){take();return {kind:'integer',value:token.text==='HIGH'?1:0,at:token};}
-    if(!negative&&allowRead&&lessonId==='climate-dht'&&token.text===dht?.name&&tokens[index+1].text==='.'){take();expect('.');const method=take();if(method.kind!=='name'||!['readTemperature','readHumidity'].includes(method.text))throw new ProgramError('DHT 只支援 readTemperature() 與 readHumidity() 讀取。',method);expect('(');expect(')');return {kind:'dht-read',humidity:method.text==='readHumidity',at:token};}
+    if(!negative&&allowRead&&(lessonId==='climate-dht'||lessonId==='environment-lab')&&token.text===dht?.name&&tokens[index+1].text==='.'){take();expect('.');const method=take();if(method.kind!=='name'||!['readTemperature','readHumidity'].includes(method.text))throw new ProgramError('DHT 只支援 readTemperature() 與 readHumidity() 讀取。',method);expect('(');expect(')');return {kind:'dht-read',humidity:method.text==='readHumidity',at:token};}
     if(!negative&&allowRead&&hasDigitalRead(lessonId)&&token.text==='digitalRead'){take();expect('(');const pin=expression();expect(')');return {kind:'read',pin,at:token};}
     if(!negative&&allowRead&&lessonId==='ultrasonic-alert'&&token.text==='pulseIn'){take();expect('(');const pin=expression();expect(',');expect('HIGH');expect(',');const timeout=expression();expect(')');return {kind:'pulse',pin,timeout,at:token};}
     if(!negative&&allowRead&&hasADC(lessonId)&&token.text==='analogRead'){take();expect('(');const pin=expression();expect(')');return {kind:'analog',pin,at:token};}
@@ -83,16 +83,19 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
   };
   const declaration=(allowRead=false):Extract<Statement,{kind:'declare'}>=>{
     const at=expect('int');const name=take();
-    if(name.kind!=='name'||reserved.has(name.text)||name.text===servoName||name.text===dht?.name||name.text===oledName)throw new ProgramError('請使用非保留字的變數名稱。',name);
+    if(name.kind!=='name'||reserved.has(name.text)||name.text===servoName||name.text===dht?.name||name.text===oledName||name.text===digitsName)throw new ProgramError('請使用非保留字的變數名稱。',name);
     expect('=');const value=expression(allowRead,advanced);expect(';');return {kind:'declare',name:name.text,value,at};
   };
   const statement=(depth=0):Statement=>{
     if(++count>limits.statements)throw new ProgramError(`程式最多 ${limits.statements} 個陳述。`,peek());
+
+    if(lessonId==='seven-counter'&&peek().text===digitsName){const at=take();expect('.');const method=take();if(method.kind!=='name'||!['setBrightness','showNumberDec'].includes(method.text))throw new ProgramError('TM1637 只支援 setBrightness 與 showNumberDec。',method);expect('(');const value=expression();expect(')');expect(';');return {kind:'oled-call',method:'digits-'+method.text,args:[value],at};}
+
     if(is('int'))return declaration(true);
     const at=take();if(at.kind!=='name')throw new ProgramError('預期支援的陳述名稱。',at);
-    if(lessonId==='climate-dht'&&at.text===dht?.name&&is('.')){take();expect('begin');expect('(');expect(')');expect(';');return {kind:'dht-begin',at};}
-    if(lessonId==='oled-i2c'&&at.text==='Wire'){expect('.');expect('begin');expect('(');const sda=expression();expect(',');const scl=expression();expect(')');expect(';');return {kind:'wire-begin',sda,scl,at};}
-    if(lessonId==='oled-i2c'&&at.text===oledName&&is('.')){
+    if((lessonId==='climate-dht'||lessonId==='environment-lab')&&at.text===dht?.name&&is('.')){take();expect('begin');expect('(');expect(')');expect(';');return {kind:'dht-begin',at};}
+    if((lessonId==='oled-i2c'||lessonId==='environment-lab')&&at.text==='Wire'){expect('.');expect('begin');expect('(');const sda=expression();expect(',');const scl=expression();expect(')');expect(';');return {kind:'wire-begin',sda,scl,at};}
+    if((lessonId==='oled-i2c'||lessonId==='environment-lab')&&at.text===oledName&&is('.')){
       take();const method=take();if(method.kind!=='name'||!['begin','clearDisplay','setTextSize','setTextColor','setCursor','print','println','display'].includes(method.text))throw new ProgramError('不支援此 OLED 方法。',method);expect('(');const args:(Expression|string)[]=[];
       if(method.text==='begin'){expect('SSD1306_SWITCHCAPVCC');expect(',');args.push(expression());}
       else if(method.text==='setTextColor')expect('SSD1306_WHITE');
@@ -113,7 +116,7 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
       const then=branch();let otherwise:Statement[]=[];if(peek().kind==='name'&&is('else')){take();otherwise=branch();}return {kind:'if',left,right,operator:operator.text as Extract<Statement,{kind:'if'}>['operator'],then,otherwise,at};
     }
     if(advanced&&at.kind==='name'&&!reserved.has(at.text)&&is('=')){take();const value=expression(true,true);expect(';');return {kind:'assign',name:at.text,value,at};}
-    if(![...((lessonId==='servo-angle'||lessonId==='oled-i2c')?[]:['pinMode','digitalWrite']),'delay',...(hasPWM(lessonId)?['analogWrite']:[]),...(lessonId==='ultrasonic-alert'?['delayMicroseconds']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
+    if(![...((lessonId==='servo-angle'||lessonId==='oled-i2c'||lessonId==='seven-counter')?[]:['pinMode','digitalWrite']),'delay',...(hasPWM(lessonId)?['analogWrite']:[]),...(lessonId==='ultrasonic-alert'?['delayMicroseconds']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
     expect('(');const value=expression(advanced,advanced);
     if(at.text==='delayMicroseconds'){expect(')');expect(';');return {kind:'microdelay',duration:value,at};}
     if(at.text==='delay'){expect(')');expect(';');return {kind:'delay',duration:value,at};}
@@ -128,11 +131,12 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
     if(constant.text!=='HIGH'&&constant.text!=='LOW')throw new ProgramError('digitalWrite 的第二個參數只支援 HIGH 或 LOW。',constant);
     expect(')');expect(';');return {kind:'write',pin:value,level:constant.text,at};
   };
-  const globals:Program['globals']=[];while(is('int')||(lessonId==='servo-angle'&&is('Servo'))||(lessonId==='climate-dht'&&is('DHT'))||(lessonId==='oled-i2c'&&is('Adafruit_SSD1306'))) {
+  const globals:Program['globals']=[];while((lessonId==='seven-counter'&&is('TM1637Display'))||is('int')||(lessonId==='servo-angle'&&is('Servo'))||((lessonId==='climate-dht'||lessonId==='environment-lab')&&is('DHT'))||((lessonId==='oled-i2c'||lessonId==='environment-lab')&&is('Adafruit_SSD1306'))) {
     if(++count>limits.statements)throw new ProgramError('宣告數量超過上限。',peek());
     if(is('int')){globals.push(declaration());continue;}
+    if(lessonId==='seven-counter'&&is('TM1637Display')){if(digitsName)throw new ProgramError('只支援一個 TM1637Display。',peek());take();const name=take();if(name.kind!=='name'||reserved.has(name.text)||globals.some(g=>g.name===name.text))throw new ProgramError('顯示器名稱無效。',name);digitsName=name.text;expect('(');expect('22');expect(',');expect('21');expect(')');expect(';');continue;}
     if(is('DHT')||is('Adafruit_SSD1306')){
-      const at=take(),name=take();if(name.kind!=='name'||reserved.has(name.text)||dht||oledName||globals.some(g=>g.name===name.text))throw new ProgramError('只接受一個名稱不重複的全域裝置物件。',at);
+      const at=take(),name=take();if(at.kind!=='name'||name.kind!=='name'||reserved.has(name.text)||name.text===dht?.name||name.text===oledName||(at.text==='DHT'?Boolean(dht):Boolean(oledName))||globals.some(g=>g.name===name.text))throw new ProgramError('只接受一個名稱不重複的全域裝置物件。',at);
       expect('(');if(at.text==='DHT'){const pin=expression();if(pin.kind!=='integer')throw new ProgramError('DHT 建構子腳位只接受整數常值。',at);expect(',');expect('DHT22');dht={name:name.text,pin};}
       else {expect('128');expect(',');expect('64');expect(',');expect('&');expect('Wire');expect(',');expect('-');expect('1');oledName=name.text;}
       expect(')');expect(';');continue;

@@ -1,6 +1,8 @@
 import type {LessonId} from '../lessons.ts';
 import {blinkExample} from './language.ts';
 export const solutions:Record<LessonId,{title:string;code:string;notes:string[]}>= {
+"environment-lab":{"title": "環境監測整合參考解法", "code": "Adafruit_SSD1306 display(128,64,&Wire,-1);\nDHT climate(4, DHT22);\n\nvoid setup() {\n  climate.begin();\n  Wire.begin(21,22);\n  display.begin(SSD1306_SWITCHCAPVCC,0x3C);\n  pinMode(23, OUTPUT);\n}\n\nvoid loop() {\n  int temperature = climate.readTemperature();\n  int humidity = climate.readHumidity();\n  display.clearDisplay();\n  display.setCursor(0,0);\n  display.print(\"Temp C: \");\n  display.println(temperature);\n  display.print(\"RH %: \");\n  display.println(humidity);\n  display.display();\n  if (temperature >= 30) {\n    digitalWrite(23, HIGH);\n  } else {\n    if (humidity >= 80) {\n      digitalWrite(23, HIGH);\n    } else {\n      digitalWrite(23, LOW);\n    }\n  }\n  delay(2000);\n}\n", "notes": ["共十線，DHT22 與 OLED 共用 3.3V 和 GND，訊號不可跨接。", "兩秒取樣與畫面提交分開；失敗時診斷停止，不保留錯誤警示狀態。", "實板需 DHT、GFX、SSD1306 與 Wire，並另處理 NaN／初始化失敗。"]},
+"seven-counter":{"title": "四位數計數參考解法", "code": "TM1637Display digits(22,21);\nint count = 0;\nvoid setup() {\n  digits.setBrightness(7);\n}\nvoid loop() {\n  digits.showNumberDec(count);\n  count = count + 1;\n  if (count > 9999) {\n    count = 0;\n  }\n  delay(1000);\n}\n", "notes": ["固定 CLK22、DIO21，四線模組必須相容 3.3V 邏輯。", "僅支援整數 0～9999，不補前導零；非 I²C，不使用 0x3C。", "實板需 TM1637Display 函式庫與標頭，本版不模擬亮度、冒號、負數或任意段碼。"]},
  blink:{title:'LED 閃爍參考解法',code:blinkExample,notes:['setup 將 GPIO23 設為 OUTPUT。','loop 依序輸出 HIGH、等待 1000 毫秒、輸出 LOW、再等待 1000 毫秒；完整週期為 2 秒。','先完成 GPIO23 → 電阻 → LED → GND 接線；程式正確但接線錯誤時，LED 仍不會亮。']},
  'button-led':{title:'按鈕控制 LED 參考解法',code:`int ledPin = 23;
 int buttonPin = 18;

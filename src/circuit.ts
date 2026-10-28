@@ -30,6 +30,8 @@ export function terminalLabel(id: string,lessonId:LessonId='blink'): string {
   return (lessons[lessonId].parts as Record<string,string>)[id]??(lessons['button-led'].parts as Record<string,string>)[id]??(lessons['dual-led'].parts as Record<string,string>)[id]??'未知端點';
 }
 export function exampleWires(lessonId:LessonId='blink'): CircuitWire[] {
+  if(lessonId==='environment-lab')return [...exampleWires('climate-dht'),...exampleWires('oled-i2c').map((w,i)=>({...w,id:'example-'+(i+7)}))];
+  if(lessonId==='seven-counter')return exampleWires('oled-i2c');
   if(lessonId==='oled-i2c')return [{id:'example-1',from:'J2-01',to:'oled:vcc'},{id:'example-2',from:'oled:gnd',to:'J3-07'},{id:'example-3',from:'J3-06',to:'oled:sda'},{id:'example-4',from:'J3-03',to:'oled:scl'}];
   if(lessonId==='ultrasonic-alert')return [{id:'example-1',from:'J3-02',to:'resistor:a'},{id:'example-2',from:'resistor:b',to:'led:a'},{id:'example-3',from:'led:k',to:'J3-07'},{id:'example-4',from:'supply:plus',to:'ultra:vcc'},{id:'example-5',from:'ultra:gnd',to:'supply:minus'},{id:'example-6',from:'supply:minus',to:'J2-14'},{id:'example-7',from:'J3-03',to:'ultra:trig'},{id:'example-8',from:'ultra:echo',to:'echo1:a'},{id:'example-9',from:'echo1:b',to:'echo2:a'},{id:'example-10',from:'echo2:b',to:'J3-01'},{id:'example-11',from:'echo1:b',to:'J2-05'}];
   if(lessonId==='pir-delay')return [{id:'example-1',from:'J3-02',to:'resistor:a'},{id:'example-2',from:'resistor:b',to:'led:a'},{id:'example-3',from:'led:k',to:'J3-07'},{id:'example-4',from:'supply:plus',to:'pir:vcc'},{id:'example-5',from:'pir:gnd',to:'supply:minus'},{id:'example-6',from:'supply:minus',to:'J2-14'},{id:'example-7',from:'pir:out',to:'J2-11'}];
@@ -92,6 +94,8 @@ export interface CircuitAnalysis {channels?:ChannelAnalysis[]; code: CircuitCode
 
 /** Discrete rules for one GPIO23, one 220-ohm resistor and one LED. No analog solver. */
 export function analyzeCircuit(wires: CircuitWire[], level: OutputLevel,lessonId:LessonId='blink',secondaryLevel:OutputLevel='LOW',thirdLevel:OutputLevel='LOW'): CircuitAnalysis {
+  if(lessonId==='seven-counter')return analyzeCircuit(wires,level,'oled-i2c');
+  if(lessonId==='environment-lab'){const device=analyzeDeviceWires(wires,lessonId);return device.valid?analyzeCircuit(potLedWires(wires),level):{...device,title:'整合接線無效',lit:false};}
   if(lessonId==='climate-dht'||lessonId==='oled-i2c'){const device=analyzeDeviceWires(wires,lessonId);if(!device.valid)return {...device,lit:false,title:'裝置接線無效'};if(lessonId==='oled-i2c')return {...device,lit:level==='HIGH',title:'OLED 接線有效'};return analyzeCircuit(potLedWires(wires),level);}
   if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay'){const sensor=analyzeMotionRange(wires,lessonId);if(!sensor.valid)return {...sensor,lit:false,title:'感測器接線無效'};const load=analyzeCircuit(potLedWires(wires),level);return load.valid?{...load,description:level==='HIGH'?'LED 支路有效，GPIO23 為 HIGH，LED 亮起。':'LED 支路有效；請在程式練習實作警示或延遲邏輯，原始輸入不直接控制 LED。'}:load;}
   if(lessonId==='servo-angle')return analyzeServo(wires,level==='HIGH');
@@ -155,7 +159,8 @@ export function wireColor(wire: CircuitWire): string {
 export interface CurrentSegment {id:string;kind:'wire'|'resistor'|'led';from:string;to:string}
 /** Conventional current direction, not electron speed or an analog current estimate. */
 export function currentPath(wires:CircuitWire[],level:OutputLevel,lessonId:LessonId='blink',secondaryLevel:OutputLevel='LOW',thirdLevel:OutputLevel='LOW'):CurrentSegment[]{
-  if(lessonId==='oled-i2c')return [];
+  if(lessonId==='seven-counter'||lessonId==='oled-i2c')return [];
+  if(lessonId==='environment-lab')return analyzeDeviceWires(wires,lessonId).valid?currentPath(potLedWires(wires),level):[];
   if(lessonId==='climate-dht')return analyzeDeviceWires(wires,lessonId).valid?currentPath(potLedWires(wires),level):[];
   if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay')return analyzeMotionRange(wires,lessonId).valid?currentPath(potLedWires(wires),level):[];
   if(lessonId==='servo-angle')return analyzeServo(wires,level==='HIGH').lit?wires.filter(w=>[w.from,w.to].some(id=>id==='servo:vcc'||id==='servo:gnd')).map(w=>({...w,kind:'wire' as const,from:w.from==='servo:vcc'||w.to==='servo:gnd'?w.to:w.from,to:w.from==='servo:vcc'||w.to==='servo:gnd'?w.from:w.to})):[];
@@ -315,7 +320,15 @@ export function analyzeMotionRange(wires:CircuitWire[],lessonId:'ultrasonic-aler
  return result('valid','理想 Echo 分壓有效；距離輸入不是實物測距。');
 }
 
-export function analyzeDeviceWires(wires:CircuitWire[],id:'climate-dht'|'oled-i2c'):SensorWiring{
+export function analyzeDeviceWires(wires:CircuitWire[],id:'climate-dht'|'oled-i2c'|'environment-lab'|'seven-counter'):SensorWiring{
+ if(id==='environment-lab'){
+  const isLed=(p:string)=>['resistor:a','resistor:b','led:a','led:k','J3-02'].includes(p);
+  if(wires.some(w=>(w.from.startsWith('oled:')&&(w.to.startsWith('dht:')||isLed(w.to)||w.to==='J3-13'))||(w.to.startsWith('oled:')&&(w.from.startsWith('dht:')||isLed(w.from)||w.from==='J3-13'))))return {valid:false,code:'short',description:'不同裝置訊號與 LED 支路不可跨接。'};
+  const a=analyzeDeviceWires(wires.filter(w=>!w.from.startsWith('oled:')&&!w.to.startsWith('oled:')),'climate-dht');
+  const b=analyzeDeviceWires(wires.filter(w=>!w.from.startsWith('dht:')&&!w.to.startsWith('dht:')&&!isLed(w.from)&&!isLed(w.to)),'oled-i2c');
+  return !a.valid?a:!b.valid?b:{valid:true,code:'valid',description:'DHT22、OLED 接線有效。'};
+ }
+
  const result=(code:CircuitCode,description:string):SensorWiring=>({valid:code==='valid',code,description});const seen:CircuitWire[]=[];for(const w of wires){if(wireError(seen,w.from,w.to,id))return result('invalid','移除未知、重複或無效端點。');seen.push(w);}
  const climate=id==='climate-dht',prefix=climate?'dht':'oled';const pairs=climate?[[prefix+':vcc','J2-01'],[prefix+':data','J3-13']]:[[prefix+':vcc','J2-01'],[prefix+':sda','J3-06'],[prefix+':scl','J3-03']];
  const grounds=new Set<string>(lessonDefinition.groundIds),led=new Set(climate?['J3-02',...Object.keys(lessonDefinition.parts)]:[]),device=new Set([...pairs.flat(),prefix+':gnd']);const allowed=new Set([...grounds,...led,...device]);if(wires.some(w=>!allowed.has(w.from)||!allowed.has(w.to)))return result('unsupported','本課只接受指定 GPIO、3V3 與 GND，不支援 5V。');

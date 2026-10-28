@@ -29,6 +29,9 @@ export function terminalPosition(id: string): THREE.Vector3 | null {
   return pos ? new THREE.Vector3(...pos) : null;
 }
 export function createCircuitScene(lessonId:LessonId='blink') {
+  const positions:Record<string,[number,number,number]>={...partPositions,...(lessonId==='environment-lab'?{'oled:vcc':[65,-18,2],'oled:gnd':[74,-18,2],'oled:sda':[83,-18,2],'oled:scl':[92,-18,2]}:{})};
+  const terminalPosition=(id:string)=>{const pin=pinById.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(p[0],p[1],p[2]):null;};
+
   const group = new THREE.Group();
   const hitboxes: THREE.Mesh[] = [];
   const textures: THREE.Texture[] = [];
@@ -54,7 +57,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);mesh.position.set(x,y,1);group.add(mesh);
   }
   const ledVisuals:{material:THREE.MeshPhysicalMaterial;halo:THREE.Mesh;baseColor:number}[]=[];
-  for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle'||lessonId==='oled-i2c')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
+  for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle'||(lessonId==='oled-i2c'||lessonId==='seven-counter'))?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
     const offset=-24*index,baseColor=lessonId==='traffic-light'?[0xb81d32,0xe6ad15,0x249a51][index]:index?0x2864d5:0xb81d32;
     const ledMaterial=index?red.clone():red;if(index){ledMaterial.color.set(baseColor);materials.push(ledMaterial);}
     const resistorBody=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistorBody.rotation.z=Math.PI/2;resistorBody.position.set(32,8+offset,2);group.add(resistorBody);
@@ -77,18 +80,21 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     ledVisuals.push({material:ledMaterial,halo,baseColor});
   }
   let oledCanvas:HTMLCanvasElement|null=null,oledTexture:THREE.CanvasTexture|null=null,oledRevision=-1,oledBegun=false;
-  if(lessonId==='climate-dht'||lessonId==='oled-i2c'){
-   const oled=lessonId==='oled-i2c';const moduleMaterial=new THREE.MeshStandardMaterial({color:0x2e5686,roughness:.55});materials.push(moduleMaterial);
+  if((lessonId==='climate-dht'||lessonId==='environment-lab')||(lessonId==='oled-i2c'||lessonId==='seven-counter')){
+   const oled=(lessonId==='oled-i2c'||lessonId==='seven-counter');const moduleMaterial=new THREE.MeshStandardMaterial({color:0x2e5686,roughness:.55});materials.push(moduleMaterial);
    const body=new THREE.Mesh(new THREE.BoxGeometry(oled?34:22,oled?24:14,2),moduleMaterial);body.position.set(39,oled?-3:-12,1);group.add(body);
    if(oled){
     oledCanvas=document.createElement('canvas');oledCanvas.width=512;oledCanvas.height=256;oledTexture=new THREE.CanvasTexture(oledCanvas);oledTexture.colorSpace=THREE.SRGBColorSpace;textures.push(oledTexture);
     const screenMaterial=new THREE.MeshBasicMaterial({map:oledTexture,toneMapped:false});materials.push(screenMaterial);const screen=new THREE.Mesh(new THREE.PlaneGeometry(29,14.5),screenMaterial);screen.position.set(39,-3,2.1);group.add(screen);
-    text('SSD1306 / 128x64',39,13,31,3);
+    text(lessonId==='seven-counter'?'TM1637 / 4 DIGITS':'SSD1306 / 128x64',39,13,31,3);
    }else{
     const sensorMaterial=new THREE.MeshStandardMaterial({color:0xe3e8f1,roughness:.75});materials.push(sensorMaterial);const sensor=new THREE.Mesh(new THREE.BoxGeometry(13,12,5),sensorMaterial);sensor.position.set(39,-10,4);group.add(sensor);
     const slitMaterial=new THREE.MeshStandardMaterial({color:0x77889e});materials.push(slitMaterial);for(let i=0;i<4;i++){const slit=new THREE.Mesh(new THREE.BoxGeometry(9,.7,.2),slitMaterial);slit.position.set(39,-14+i*2.5,6.6);group.add(slit);}text('DHT22 / 3V3',39,-1,24,2.5);
    }
-   for(const id of oled?['oled:vcc','oled:gnd','oled:sda','oled:scl']:['dht:vcc','dht:data','dht:gnd']){const p=terminalPosition(id)!;tube([p,new THREE.Vector3(p.x,oled?-15:-19,1)],gray);text(id.split(':')[1].toUpperCase(),p.x,p.y-3,7);}
+   for(const id of oled?['oled:vcc','oled:gnd','oled:sda','oled:scl']:['dht:vcc','dht:data','dht:gnd']){const p=terminalPosition(id)!;tube([p,new THREE.Vector3(p.x,oled?-15:-19,1)],gray);text(lessonId==='seven-counter'?(id==='oled:sda'?'DIO':id==='oled:scl'?'CLK':id.split(':')[1].toUpperCase()):id.split(':')[1].toUpperCase(),p.x,p.y-3,7);}
+  }
+  if(lessonId==='environment-lab'){
+   oledCanvas=document.createElement('canvas');oledCanvas.width=512;oledCanvas.height=256;oledTexture=new THREE.CanvasTexture(oledCanvas);oledTexture.colorSpace=THREE.SRGBColorSpace;textures.push(oledTexture);const m=new THREE.MeshBasicMaterial({map:oledTexture});materials.push(m);const screen=new THREE.Mesh(new THREE.PlaneGeometry(28,14),m);screen.position.set(78,-4,3);group.add(screen);text('OLED 128x64',78,7,25,3);
   }
   let pirDome:THREE.MeshPhysicalMaterial|null=null;
   if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay'){
@@ -135,10 +141,10 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     const housing=new THREE.Mesh(new THREE.BoxGeometry(12,12,2.5),new THREE.MeshStandardMaterial({color:0x26303e,roughness:.55}));materials.push(housing.material);housing.position.set(35.5,-11.5,1);group.add(housing);
     buttonCap=new THREE.Mesh(new THREE.CylinderGeometry(3.1,3.1,2,24),green);buttonCap.rotation.x=Math.PI/2;buttonCap.position.set(35.5,-11.5,3.3);group.add(buttonCap);
     const target=new THREE.Mesh(new THREE.SphereGeometry(3.4,16,12),pick);target.position.set(35.5,-11.5,4);target.userData.pinId='button:press';hitboxes.push(target);group.add(target);
-    for(const [id,pos] of Object.entries(partPositions).filter(([id])=>id.startsWith('button:'))){const right=id.includes(':b');tube([new THREE.Vector3(...pos),new THREE.Vector3(right?40.5:30.5,pos[1],1)],gray);text(id.split(':')[1].toUpperCase(),pos[0],pos[1]-2.6,4,1.6);}
+    for(const [id,pos] of Object.entries(positions).filter(([id])=>id.startsWith('button:'))){const right=id.includes(':b');tube([new THREE.Vector3(...pos),new THREE.Vector3(right?40.5:30.5,pos[1],1)],gray);text(id.split(':')[1].toUpperCase(),pos[0],pos[1]-2.6,4,1.6);}
     text('BUTTON',35.5,-2.5,13,2.3);
   }
-  for(const [id,pos] of Object.entries(partPositions).filter(([id])=>Object.hasOwn(lessons[lessonId].parts,id))) {
+  for(const [id,pos] of Object.entries(positions).filter(([id])=>Object.hasOwn(lessons[lessonId].parts,id))) {
     const terminal=new THREE.Mesh(new THREE.SphereGeometry(.8,16,10),green);terminal.position.set(...pos);group.add(terminal);
     const target=new THREE.Mesh(new THREE.SphereGeometry(2.2,12,8),pick);target.position.set(...pos);target.userData.pinId=id;group.add(target);hitboxes.push(target);
   }
@@ -186,7 +192,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
           const material=new THREE.MeshStandardMaterial({color:wireColor(wire),roughness:.32});
           const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,32,.3,8,false),material);group.add(mesh);wireMeshes.push(mesh);addFlow('wire:'+wire.id,curve,wire.from);
         });
-        for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle'||lessonId==='oled-i2c')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
+        for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle'||(lessonId==='oled-i2c'||lessonId==='seven-counter'))?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
           const offset=-24*index,r=index?'resistor'+(index+1):'resistor',l=index?'led'+(index+1):'led';
           addFlow('resistor:'+r,new THREE.CatmullRomCurve3([new THREE.Vector3(24.5,8+offset,2),new THREE.Vector3(32,8+offset,4),new THREE.Vector3(39.5,8+offset,2)]),r+':a');
           if(lessonId==='rgb-mixing'){const anode=['rgb:r','rgb:g','rgb:b'][index];addFlow('led:rgb-'+index,new THREE.CatmullRomCurve3([terminalPosition(anode)!,new THREE.Vector3(57,-15,6),terminalPosition('rgb:k')!]),anode);continue;}
@@ -195,7 +201,8 @@ export function createCircuitScene(lessonId:LessonId='blink') {
       }
       if(oledCanvas&&oledTexture&&(oledRevision!==oled.revision||oledBegun!==oled.begun)){
         oledRevision=oled.revision;oledBegun=oled.begun;const ctx=oledCanvas.getContext('2d')!;ctx.fillStyle='#080f1b';ctx.fillRect(0,0,512,256);ctx.fillStyle='#e7f5ff';ctx.textBaseline='top';
-        if(oled.begun)for(const glyph of oled.glyphs){ctx.font=`${32*glyph.size}px monospace`;ctx.fillText(glyph.text,glyph.x*4,glyph.y*4);}oledTexture.needsUpdate=true;
+        if(oled.begun&&lessonId==='seven-counter'){const patterns:Record<string,string>={'0':'abcdef','1':'bc','2':'abdeg','3':'abcdg','4':'bcfg','5':'acdfg','6':'acdefg','7':'abc','8':'abcdefg','9':'abcdfg'};oled.glyphs.forEach((g,i)=>{const pos=[[4,0,14,3],[19,4,3,14],[19,22,3,14],[4,37,14,3],[0,22,3,14],[0,4,3,14],[4,18,14,3]];pos.forEach(([x,y,w,h],j)=>{ctx.fillStyle=(patterns[g.text]??'').includes('abcdefg'[j])?'#ff695f':'#34252a';ctx.fillRect((i*30+4+x)*4,(12+y)*4,w*4,h*4);});});}
+        else if(oled.begun)for(const glyph of oled.glyphs){ctx.font=`${32*glyph.size}px monospace`;ctx.fillText(glyph.text,glyph.x*4,glyph.y*4);}oledTexture.needsUpdate=true;
       }
       if(pirDome){pirDome.emissive.set(motion?0x183f86:0x000000);pirDome.emissiveIntensity=motion?.4:0;}
       if(sensorMaterial)sensorMaterial.color.setRGB(.3+.5*lightPosition/4095,.24+.45*lightPosition/4095,.16+.4*lightPosition/4095);

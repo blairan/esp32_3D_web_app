@@ -10,7 +10,15 @@ export class TeachingPeripherals {
  readDht(humidity:boolean,time:number,at:SourceLocation){if(!this.dhtReady)throw new ProgramError('請先呼叫 DHT 物件的 begin()。',at);if(!this.climate||time-this.climate.timeMs>=2000){if(!this.inputs.climate)throw new ProgramError('DHT22 讀取失敗；請檢查供電、DATA、接地或模擬失敗設定。',at);this.climate={...this.inputs.climate,timeMs:time};}return humidity?this.climate.humidity:this.climate.temperature;}
  wireBegin(sda:number,scl:number,at:SourceLocation){if(sda!==21||scl!==22)throw new ProgramError('本課 Wire.begin 只接受 SDA 21、SCL 22。',at);this.wireReady=true;}
  oledCall(method:string,args:(number|string)[],at:SourceLocation){
+  if(method.startsWith('digits-')){
+   if(!this.inputs.oledWired)throw new ProgramError('TM1637 供電、CLK 或 DIO 接線無效。',at);
+   const n=args[0] as number;
+   if(method==='digits-setBrightness'){if(!Number.isInteger(n)||n<0||n>7)throw new ProgramError('亮度只接受 0～7。',at);return;}
+   if(!Number.isInteger(n)||n<0||n>9999)throw new ProgramError('四位數計數只接受 0～9999。',at);
+   this.oled={begun:true,revision:this.oled.revision+1,glyphs:String(n).padStart(4,' ').split('').map((text,i)=>({text,x:i*30,y:8,size:2}))};return;
+  }
   if(method==='begin'){
+
    if(!this.wireReady)throw new ProgramError('請先 Wire.begin(21,22)，再初始化 OLED。',at);
    if(args[0]!==60)throw new ProgramError('此 OLED 模型固定 I²C 位址 0x3C（60）。',at);
    if(!this.inputs.oledWired)throw new ProgramError('OLED 供電、接地、SDA 或 SCL 接線無效。',at);

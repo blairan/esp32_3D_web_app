@@ -1,4 +1,4 @@
-export type LessonId='blink'|'button-led'|'dual-led'|'traffic-light'|'button-toggle'|'button-counter'|'buzzer-doorbell'|'pwm-breathing'|'rgb-mixing'|'pot-dimming'|'ldr-nightlight'|'servo-angle'|'ultrasonic-alert'|'pir-delay'|'climate-dht'|'oled-i2c';
+export type LessonId='blink'|'button-led'|'dual-led'|'traffic-light'|'button-toggle'|'button-counter'|'buzzer-doorbell'|'pwm-breathing'|'rgb-mixing'|'pot-dimming'|'ldr-nightlight'|'servo-angle'|'ultrasonic-alert'|'pir-delay'|'climate-dht'|'oled-i2c'|'seven-counter'|'environment-lab';
 const ledParts={'resistor:a':'電阻 A 端','resistor:b':'電阻 B 端','led:a':'LED 正極 A+','led:k':'LED 負極 K−'};
 export const lessons={
  blink:{id:'blink',title:'LED 閃爍',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:null,inputPin:null,parts:ledParts},
@@ -17,13 +17,15 @@ export const lessons={
  'pir-delay':{id:'pir-delay',title:'PIR 人體感測延遲燈',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:27,inputPin:'J2-11',parts:{...ledParts,'pir:vcc':'PIR VCC（5V）','pir:gnd':'PIR GND','pir:out':'PIR OUT（3.3V）','supply:plus':'外部 5V 正極','supply:minus':'外部電源 GND'}},
  'climate-dht':{id:'climate-dht',title:'溫溼度感測',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:4,inputPin:'J3-13',parts:{...ledParts,'dht:vcc':'DHT22 VCC（3V3）','dht:data':'DHT22 DATA（內建上拉）','dht:gnd':'DHT22 GND'}},
  'oled-i2c':{id:'oled-i2c',title:'OLED 顯示（I²C）',source:'J3-06',outputGPIO:21,outputGPIOs:[21,22],inputGPIO:null,inputPin:null,parts:{'oled:vcc':'OLED VCC（3V3）','oled:gnd':'OLED GND','oled:sda':'OLED SDA','oled:scl':'OLED SCL'}},
+ 'seven-counter':{id:'seven-counter',title:'七段顯示器計數',source:'J3-06',outputGPIO:21,outputGPIOs:[21,22],inputGPIO:null,inputPin:null,parts:{'oled:vcc':'TM1637 VCC（3V3）','oled:gnd':'TM1637 GND','oled:sda':'TM1637 DIO','oled:scl':'TM1637 CLK'}},
+ 'environment-lab':{id:'environment-lab',title:'環境監測整合專題',source:'J3-02',outputGPIO:23,outputGPIOs:[23,21,22],inputGPIO:4,inputPin:'J3-13',parts:{...ledParts,'dht:vcc':'DHT22 VCC（3V3）','dht:data':'DHT22 DATA','dht:gnd':'DHT22 GND','oled:vcc':'OLED VCC（3V3）','oled:gnd':'OLED GND','oled:sda':'OLED SDA','oled:scl':'OLED SCL'}},
 } satisfies Record<LessonId,{id:LessonId;title:string;source:string;outputGPIO:number;outputGPIOs:number[];inputGPIO:number|null;inputPin:string|null;parts:Record<string,string>}>;
-export function readLesson(value:string|null):LessonId{return value==='button-led'||value==='dual-led'||value==='traffic-light'||value==='button-toggle'||value==='button-counter'||value==='buzzer-doorbell'||value==='pwm-breathing'||value==='rgb-mixing'||value==='pot-dimming'||value==='ldr-nightlight'||value==='servo-angle'||value==='ultrasonic-alert'||value==='pir-delay'||value==='climate-dht'||value==='oled-i2c'?value:'blink';}
+export function readLesson(value:string|null):LessonId{return value==='seven-counter'||value==='environment-lab'||value==='button-led'||value==='dual-led'||value==='traffic-light'||value==='button-toggle'||value==='button-counter'||value==='buzzer-doorbell'||value==='pwm-breathing'||value==='rgb-mixing'||value==='pot-dimming'||value==='ldr-nightlight'||value==='servo-angle'||value==='ultrasonic-alert'||value==='pir-delay'||value==='climate-dht'||value==='oled-i2c'?value:'blink';}
 
 export function hasButton(id:LessonId){return lessons[id].inputGPIO===18;}
 export function hasStatefulButton(id:LessonId){return id==='button-toggle'||id==='button-counter';}
 
-export function hasExtendedSyntax(id:LessonId){return hasStatefulButton(id)||id==='pwm-breathing'||id==='rgb-mixing'||id==='pot-dimming'||id==='ldr-nightlight'||id==='servo-angle'||id==='ultrasonic-alert'||id==='pir-delay'||id==='climate-dht'||id==='oled-i2c';}
+export function hasExtendedSyntax(id:LessonId){return id==='seven-counter'||id==='environment-lab'||hasStatefulButton(id)||id==='pwm-breathing'||id==='rgb-mixing'||id==='pot-dimming'||id==='ldr-nightlight'||id==='servo-angle'||id==='ultrasonic-alert'||id==='pir-delay'||id==='climate-dht'||id==='oled-i2c';}
 
 export function hasPWM(id:LessonId){return id==='pwm-breathing'||id==='rgb-mixing'||id==='pot-dimming';}
 

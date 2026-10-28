@@ -37,7 +37,7 @@ npm run preview
 
 ## 驗證狀態
 
-151 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+157 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -51,7 +51,7 @@ npm run preview
 
 ## 教學 Wiki
 
-程式練習「查看教學 Wiki」、接線「了解接線原理」及編輯器提示「查閱解說」可開啟對應繁中教學。目前 24 篇內建文章涵蓋 GPIO、LED／電阻、程式結構、感測器與顯示器等主題，只提供概念短例子，不提供完整 Blink 解答。桌面側邊閱讀、手機全螢幕；關閉後保留原程式、接線、視角與執行狀態。設計與驗證限制見 [教學 Wiki 紀錄](docs/teaching-wiki.md)。
+程式練習「查看教學 Wiki」、接線「了解接線原理」及編輯器提示「查閱解說」可開啟對應繁中教學。目前 26 篇內建文章涵蓋 GPIO、LED／電阻、程式結構、感測器與顯示器等主題，只提供概念短例子，不提供完整 Blink 解答。桌面側邊閱讀、手機全螢幕；關閉後保留原程式、接線、視角與執行狀態。設計與驗證限制見 [教學 Wiki 紀錄](docs/teaching-wiki.md)。
 
 ## 第二組專題：按鈕控制 LED
 
@@ -78,3 +78,5 @@ npm run preview
 第十三課：[超音波測距警示](https://blairan.github.io/esp32_3D_web_app/?lesson=ultrasonic-alert#code)；第十四課：[PIR 人體感測延遲燈](https://blairan.github.io/esp32_3D_web_app/?lesson=pir-delay#code)。Echo 分壓、理想回波與無回波、PIR 虛擬延遲／重新計時；最新共 138 項測試、22 篇 Wiki。詳見 [教學契約與驗證](docs/motion-range-lessons.md)。
 
 第十五課：[溫溼度感測](https://blairan.github.io/esp32_3D_web_app/?lesson=climate-dht#code)；第十六課：[OLED 顯示（I²C）](https://blairan.github.io/esp32_3D_web_app/?lesson=oled-i2c#code)。DHT22 整數與兩秒共用取樣、警示門檻；SSD1306 ASCII／整數文字、緩衝與畫面提交。最新共 151 項測試、24 篇 Wiki。詳見 [教學契約與驗證](docs/climate-oled-lessons.md)。原定 18 項尚餘七段顯示器與整合專題。
+
+第十七課：[七段顯示器計數](https://blairan.github.io/esp32_3D_web_app/?lesson=seven-counter#code)；第十八課：[環境監測整合](https://blairan.github.io/esp32_3D_web_app/?lesson=environment-lab#code)。四位 TM1637 與 DHT22／OLED／LED 整合，第一輪 18 項均已實作；目前 157 項測試、26 篇 Wiki。詳見 [契約與驗證](docs/final-two-lessons.md)。

@@ -167,8 +167,8 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     function reset() {
       defaultView=true;stopInertia();
       // Portrait framing adapts to a narrow canvas as well as the laptop layout.
-      const distance = lessonMode ? Math.min(300,Math.max(lessonId==='ultrasonic-alert'?200:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert')?100:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (camera.aspect < 0.85 ? 125 : 105);
-      camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? 22 : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='ultrasonic-alert'?-12:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
+      const distance = lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (camera.aspect < 0.85 ? 125 : 105);
+      camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? (lessonId==='environment-lab'?38:22) : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='ultrasonic-alert'?-12:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
     }
     const select = (id: string) => {
       selectedPinId=id;

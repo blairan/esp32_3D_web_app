@@ -183,3 +183,10 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - 沿用空架構、依名稱補全／參數 Wiki、可展開答案、範例切換恢復；151 項測試、正式建置、兩課 Worker／桌面與窄螢幕及原十四課載入接線回歸通過，Wiki 共 24 篇。
 - 詳細教學契約、來源連線及驗證限制見 [climate-oled-lessons.md](climate-oled-lessons.md)。程式與接線仍只存本頁；外觀偏好存本機，不宣稱跨裝置同步。
 - 下一個最小步驟：使用者試用兩課。原定 18 項尚餘七段顯示器計數與整合專題；本輪不自動開始。
+
+### 2026-10-28：第十七、十八課完成
+
+- `?lesson=seven-counter#code`：四線 TM1637、四位七段、每秒計數、9999 後歸零。
+- `?lesson=environment-lab#code`：十線 DHT22／OLED／LED，每兩秒取樣、畫面提交與門檻警示。
+- 第一輪18項均已實作；157項測試、建置與兩課瀏覽器流程通過，Wiki26篇。詳見 [final-two-lessons.md](final-two-lessons.md)。
+- 原始碼與紀錄沿 main→GitHub Pages 發布；下一個最小步驟為使用者試用與回饋，沒有自動開始新課程。實機效能及硬體驗收仍待測，不宣稱完整CPU／電路模擬或跨裝置進度同步。

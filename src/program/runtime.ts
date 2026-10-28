@@ -60,7 +60,7 @@ export class ProgramRuntime {
   if(!pin)throw new ProgramError(`GPIO${gpio} 未知或未在這塊板引出。`,at);
   if(pin.category==='reserved')throw new ProgramError(`GPIO${gpio} 是 Flash 保留腳，禁止輸出。`,at);
   if(direction==='input'){
-   if(lessons[this.program.lessonId].inputGPIO===null||gpio!==lessons[this.program.lessonId].inputGPIO)throw new ProgramError(this.program.lessonId==='climate-dht'?'本課 DHT22 DATA 固定使用 GPIO4。':this.program.lessonId==='pir-delay'?'本課僅支援 GPIO27 INPUT。':this.program.lessonId==='ultrasonic-alert'?'本課僅支援 GPIO34 INPUT 接收 ECHO。':hasADC(this.program.lessonId)?'本課僅支援 GPIO34 INPUT 作為 ADC。':'本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
+   if(lessons[this.program.lessonId].inputGPIO===null||gpio!==lessons[this.program.lessonId].inputGPIO)throw new ProgramError((this.program.lessonId==='climate-dht'||this.program.lessonId==='environment-lab')?'本課 DHT22 DATA 固定使用 GPIO4。':this.program.lessonId==='pir-delay'?'本課僅支援 GPIO27 INPUT。':this.program.lessonId==='ultrasonic-alert'?'本課僅支援 GPIO34 INPUT 接收 ECHO。':hasADC(this.program.lessonId)?'本課僅支援 GPIO34 INPUT 作為 ADC。':'本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
   }else{
    if(pin.category==='input')throw new ProgramError(`GPIO${gpio} 只能輸入，不能設定輸出或驅動 LED。`,at);
    if(!lessons[this.program.lessonId].outputGPIOs.includes(gpio))throw new ProgramError(`本課目前只支援 ${lessons[this.program.lessonId].outputGPIOs.map(pin=>'GPIO'+pin).join('、')} 輸出，GPIO${gpio} 尚未接入模擬。`,at);
