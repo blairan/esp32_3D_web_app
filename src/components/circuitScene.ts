@@ -9,6 +9,8 @@ export const partPositions: Record<string, [number, number, number]> = {
   'led:a': [49, -1, 2], 'led:k': [59, -1, 2],
   'resistor2:a':[24.5,-16,2],'resistor2:b':[39.5,-16,2],'led2:a':[49,-25,2],'led2:k':[59,-25,2],
   'resistor3:a':[24.5,-40,2],'resistor3:b':[39.5,-40,2],'led3:a':[49,-49,2],'led3:k':[59,-49,2],
+  'rgb:r':[49,-1,2],'rgb:g':[49,-25,2],'rgb:b':[49,-49,2],'rgb:k':[65,-25,2],
+  'pot:vcc':[27,-10,2],'pot:w':[35.5,-10,2],'pot:gnd':[44,-10,2],
   'buzzer:s':[27,4,2],'buzzer:vcc':[35.5,4,2],'buzzer:gnd':[44,4,2],
   'button:a1':[27,-7,2],'button:a2':[27,-16,2],'button:b1':[44,-7,2],'button:b2':[44,-16,2],
 };
@@ -44,7 +46,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);mesh.position.set(x,y,1);group.add(mesh);
   }
   const ledVisuals:{material:THREE.MeshPhysicalMaterial;halo:THREE.Mesh;baseColor:number}[]=[];
-  for(let index=0;index<(lessonId==='buzzer-doorbell'?0:lessonId==='traffic-light'?3:lessonId==='dual-led'?2:1);index++){
+  for(let index=0;index<(lessonId==='buzzer-doorbell'?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
     const offset=-24*index,baseColor=lessonId==='traffic-light'?[0xb81d32,0xe6ad15,0x249a51][index]:index?0x2864d5:0xb81d32;
     const ledMaterial=index?red.clone():red;if(index){ledMaterial.color.set(baseColor);materials.push(ledMaterial);}
     const resistorBody=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistorBody.rotation.z=Math.PI/2;resistorBody.position.set(32,8+offset,2);group.add(resistorBody);
@@ -53,7 +55,8 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     const material=new THREE.MeshStandardMaterial({color,roughness:.5});materials.push(material);
     cylinder(1.53,.65,29.1+i*1.85,8+offset,2,material,true);
   });
-  text((lessonId==='dual-led'||lessonId==='traffic-light')?`R${index+1} 220 Ω`:'220 Ω',32,12.5+offset,15,2.8);text('A',24.5,5+offset,4);text('B',39.5,5+offset,4);
+  text((lessonId==='dual-led'||lessonId==='traffic-light'||lessonId==='rgb-mixing')?`R${index+1} 220 Ω`:'220 Ω',32,12.5+offset,15,2.8);text('A',24.5,5+offset,4);text('B',39.5,5+offset,4);
+  if(lessonId==='rgb-mixing')continue;
   // One red LED, with explicit A/K labels; glow reflects validated graph state only.
   const dome=new THREE.Mesh(new THREE.SphereGeometry(2.7,28,20,0,Math.PI*2,0,Math.PI/2),ledMaterial);
   dome.rotation.x=Math.PI/2;dome.position.set(54,7+offset,3);group.add(dome);
@@ -64,6 +67,17 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   const haloMaterial=new THREE.MeshBasicMaterial({color:baseColor,transparent:true,opacity:.14,depthWrite:false});materials.push(haloMaterial);
   const halo=new THREE.Mesh(new THREE.CircleGeometry(5.5,36),haloMaterial);halo.position.set(54,7+offset,0);group.add(halo);halo.visible=false;
     ledVisuals.push({material:ledMaterial,halo,baseColor});
+  }
+  let rgbMaterial:THREE.MeshPhysicalMaterial|null=null,rgbHalo:THREE.Mesh|null=null,potKnob:THREE.Mesh|null=null;
+  if(lessonId==='rgb-mixing'){
+   rgbMaterial=red.clone();materials.push(rgbMaterial);const dome=new THREE.Mesh(new THREE.SphereGeometry(4.4,28,20),rgbMaterial);dome.position.set(57,-15,4);group.add(dome);
+   const haloMaterial=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.2});materials.push(haloMaterial);rgbHalo=new THREE.Mesh(new THREE.CircleGeometry(8,32),haloMaterial);rgbHalo.position.set(57,-15,0);group.add(rgbHalo);
+   for(const id of ['rgb:r','rgb:g','rgb:b','rgb:k']){const pos=terminalPosition(id)!;tube([pos,new THREE.Vector3(pos.x,-15,1),new THREE.Vector3(57,-15,2)],gray);text(id==='rgb:k'?'K-':id.slice(-1).toUpperCase(),pos.x,pos.y-3,4);}
+   text('RGB / K-',53,2,17,2.8);
+  }
+  if(lessonId==='pot-dimming'){
+   const body=new THREE.Mesh(new THREE.BoxGeometry(17,15,3),beige);body.position.set(35.5,-1,1);group.add(body);potKnob=new THREE.Mesh(new THREE.CylinderGeometry(5,5,3,24),green);potKnob.geometry.rotateX(Math.PI/2);potKnob.position.set(35.5,-1,4);group.add(potKnob);
+   const mark=new THREE.Mesh(new THREE.BoxGeometry(.7,3,.4),gray);mark.position.set(0,1.8,1.8);potKnob.add(mark);text('POT / ADC',35.5,-21,18,2.5);for(const [id,label] of [['pot:vcc','VCC'],['pot:w','W'],['pot:gnd','GND']]){const pos=terminalPosition(id)!;tube([pos,new THREE.Vector3(pos.x,-5,1)],gray);text(label,pos.x,pos.y-3,6);}
   }
   let buzzerRing:THREE.Mesh|null=null;
   if(lessonId==='buzzer-doorbell'){
@@ -118,29 +132,32 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     },
     needsAnimation(){return enabled&&(lit||lit2||lit3)&&playing&&!reducedMotion&&!simple&&flowItems.some(item=>item.active);},
     animate(delta:number){if(this.needsAnimation()){phase=(phase+delta*.45)%1;positionFlow();}},
-    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1){
+    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048){
       if(wires!==previousWires){
         clearWires();previousWires=wires;
         wires.forEach((wire,index)=>{
           const from=terminalPosition(wire.from),to=terminalPosition(wire.to);if(!from||!to)return;
           const height=6+(index%3)*1.2,mid1=from.clone().lerp(to,.3),mid2=from.clone().lerp(to,.7);mid1.z=height;mid2.z=height;
-          if([wire.from,wire.to].some(id=>pinById.get(id)?.role==='ground')){const floor=lessonId==='traffic-light'?Math.min(from.y,to.y,-56)-5-(index%2)*3:lessonId==='dual-led'?Math.min(from.y,to.y,-32)-5-(index%2)*3:Math.min(from.y,to.y,-13)-5;mid1.set(from.x,floor,height);mid2.set(to.x,floor,height);}
+          if([wire.from,wire.to].some(id=>pinById.get(id)?.role==='ground')){const floor=(lessonId==='traffic-light'||lessonId==='rgb-mixing')?Math.min(from.y,to.y,-56)-5-(index%2)*3:lessonId==='dual-led'?Math.min(from.y,to.y,-32)-5-(index%2)*3:Math.min(from.y,to.y,-13)-5;mid1.set(from.x,floor,height);mid2.set(to.x,floor,height);}
           const curve=new THREE.CatmullRomCurve3([from,mid1,mid2,to]);
           const material=new THREE.MeshStandardMaterial({color:wireColor(wire),roughness:.32});
           const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,32,.3,8,false),material);group.add(mesh);wireMeshes.push(mesh);addFlow('wire:'+wire.id,curve,wire.from);
         });
-        for(let index=0;index<(lessonId==='buzzer-doorbell'?0:lessonId==='traffic-light'?3:lessonId==='dual-led'?2:1);index++){
+        for(let index=0;index<(lessonId==='buzzer-doorbell'?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
           const offset=-24*index,r=index?'resistor'+(index+1):'resistor',l=index?'led'+(index+1):'led';
           addFlow('resistor:'+r,new THREE.CatmullRomCurve3([new THREE.Vector3(24.5,8+offset,2),new THREE.Vector3(32,8+offset,4),new THREE.Vector3(39.5,8+offset,2)]),r+':a');
+          if(lessonId==='rgb-mixing'){const anode=['rgb:r','rgb:g','rgb:b'][index];addFlow('led:rgb-'+index,new THREE.CatmullRomCurve3([terminalPosition(anode)!,new THREE.Vector3(57,-15,6),terminalPosition('rgb:k')!]),anode);continue;}
           addFlow('led:'+l,new THREE.CatmullRomCurve3([new THREE.Vector3(49,-1+offset,2),new THREE.Vector3(52.4,5+offset,2),new THREE.Vector3(54,7+offset,5),new THREE.Vector3(55.5,5+offset,2),new THREE.Vector3(59,-1+offset,2)]),l+':a');
         }
       }
+      if(rgbMaterial&&rgbHalo){const on=rgb.some(v=>v>0);const color=new THREE.Color(`rgb(${rgb.join(',')})`);rgbMaterial.color.copy(on?color:new THREE.Color(0x80909e));rgbMaterial.emissive.copy(color);rgbMaterial.emissiveIntensity=on?.8:0;(rgbHalo.material as THREE.MeshBasicMaterial).color.copy(color);rgbHalo.visible=on;}
+      if(potKnob)potKnob.rotation.z=(potPosition/4095-.5)*Math.PI*1.5;
       if(buzzerRing)buzzerRing.visible=nextLit;
-      if(lessonId==='pwm-breathing'){particleMaterial.opacity=brightness;arrowMaterial.transparent=true;arrowMaterial.opacity=brightness;}
+      if((lessonId==='pwm-breathing'||lessonId==='pot-dimming')){particleMaterial.opacity=brightness;arrowMaterial.transparent=true;arrowMaterial.opacity=brightness;}
       if(buttonCap)buttonCap.position.z=pressed?2:3.3;
       lit=nextLit;lit2=nextLit2;lit3=nextLit3;const path=new Map(currentPath(wires,lit?'HIGH':'LOW',lessonId,lit2?'HIGH':'LOW',lit3?'HIGH':'LOW').map(segment=>[segment.kind+':'+segment.id,segment]));
       for(const item of flowItems){const segment=path.get(item.key);item.active=Boolean(segment);item.forward=segment?.from===item.from;}
-      ledVisuals.forEach((visual,index)=>{const on=[lit,lit2,lit3][index];visual.material.color.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x4388ff:0xe83942):visual.baseColor);visual.material.emissive.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x164edd:0xdc101c):0x000000);if(lessonId==='pwm-breathing')visual.material.color.multiplyScalar(.35+.65*brightness);visual.material.emissiveIntensity=on ? .8*(index===0?brightness:1) : 0;(visual.halo.material as THREE.MeshBasicMaterial).opacity=.14*(index===0?brightness:1);visual.halo.visible=on;});positionFlow();
+      ledVisuals.forEach((visual,index)=>{const on=[lit,lit2,lit3][index];visual.material.color.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x4388ff:0xe83942):visual.baseColor);visual.material.emissive.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x164edd:0xdc101c):0x000000);if((lessonId==='pwm-breathing'||lessonId==='pot-dimming'))visual.material.color.multiplyScalar(.35+.65*brightness);visual.material.emissiveIntensity=on ? .8*(index===0?brightness:1) : 0;(visual.halo.material as THREE.MeshBasicMaterial).opacity=.14*(index===0?brightness:1);visual.halo.visible=on;});positionFlow();
       const position=pending?terminalPosition(pending):null;pendingRing.visible=Boolean(position);if(position)pendingRing.position.copy(position).add(new THREE.Vector3(0,0,1.5));
     },
     dispose(){

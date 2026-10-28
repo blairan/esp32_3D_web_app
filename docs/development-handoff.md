@@ -154,3 +154,10 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - 兩課都有架構、補全、Wiki、可展開答案及接線範例切換。Wiki 共 16 篇，測試共 102 項。
 - 詳細契約、瀏覽器驗證與實物限制見 [buzzer-pwm-lessons.md](buzzer-pwm-lessons.md)。
 - 下一個最小步驟：使用者試用兩課；第九課 RGB 混色尚未開始。
+
+### 2026-10-28：第九、十課完成
+
+- `?lesson=rgb-mixing#code`：共陰極 RGB、三色 PWM、各色獨立電阻、七線範例與混色預覽。
+- `?lesson=pot-dimming#code`：GPIO34（J2-05）理想 ADC、六線範例、整數除以 16 轉 PWM；即時輸入與上次讀值分開。
+- 114 項測試、建置與兩課瀏覽器流程通過，Wiki 共 18 篇；原八課亦經載入／接線回歸。
+- 詳見 [rgb-pot-lessons.md](rgb-pot-lessons.md)。下一個最小步驟：試用兩課；光敏電阻夜燈尚未開始。

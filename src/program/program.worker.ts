@@ -16,13 +16,14 @@ function tick(){
 scope.onmessage=({data})=>{
   if(data.revision<revision)return;revision=data.revision;
   try{
+    if(data.type==='analog-input'){runtime?.setAnalogInput(data.value);return;}
     if(data.type==='input'){runtime?.setInput(data.input);return;}
     if(data.type==='pause'){running=false;cancelTimer();return;}
     if(data.type==='resume'){
-      if(!runtime||running)return;runtime.setInput(data.input);running=true;
+      if(!runtime||running)return;runtime.setInput(data.input);runtime.setAnalogInput(data.analogInput??null);running=true;
       scope.postMessage({type:'snapshot',revision,snapshot:runtime.snapshot()});timer=setTimeout(tick,50);return;
     }
-    running=false;cancelTimer();runtime=new ProgramRuntime(parseProgram(data.source,data.lessonId),data.input);
+    running=false;cancelTimer();runtime=new ProgramRuntime(parseProgram(data.source,data.lessonId),data.input,data.analogInput??null);
     const snapshot=runtime.advanceTo(0);running=true;scope.postMessage({type:'snapshot',revision,snapshot});timer=setTimeout(tick,50);
   }catch(error){fail(error);}
 };

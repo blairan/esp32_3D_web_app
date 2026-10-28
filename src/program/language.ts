@@ -1,4 +1,4 @@
-import {hasButton,hasExtendedSyntax,type LessonId} from '../lessons.ts';
+import {hasButton,hasExtendedSyntax,hasPWM,type LessonId} from '../lessons.ts';
 export interface SourceLocation { line:number; column:number }
 export interface ProgramDiagnostic extends SourceLocation { message:string }
 export class ProgramError extends Error {
@@ -7,17 +7,17 @@ export class ProgramError extends Error {
 }
 export const limits = { source:12000, lines:400, tokens:4000, statements:256, delay:60000, operationsPerTick:500, totalOperations:100000, virtualTime:86400000 } as const;
 interface Token extends SourceLocation { text:string; kind:'name'|'integer'|'punctuation'|'end' }
-export type Expression = {kind:'millis';at:SourceLocation}|{kind:'binary';left:Expression;right:Expression;operator:'+'|'-';at:SourceLocation}| {kind:'integer';value:number;at:SourceLocation}|{kind:'variable';name:string;at:SourceLocation}|{kind:'read';pin:Expression;at:SourceLocation};
+export type Expression = {kind:'analog';pin:Expression;at:SourceLocation}| {kind:'millis';at:SourceLocation}|{kind:'binary';left:Expression;right:Expression;operator:'+'|'-'|'/';at:SourceLocation}| {kind:'integer';value:number;at:SourceLocation}|{kind:'variable';name:string;at:SourceLocation}|{kind:'read';pin:Expression;at:SourceLocation};
 export type Statement =
  | {kind:'assign';name:string;value:Expression;at:SourceLocation}
  | {kind:'declare';name:string;value:Expression;at:SourceLocation}
- | {kind:'pinMode';pin:Expression;mode:'OUTPUT'|'INPUT_PULLUP';at:SourceLocation}
+ | {kind:'pinMode';pin:Expression;mode:'OUTPUT'|'INPUT_PULLUP'|'INPUT';at:SourceLocation}
  | {kind:'pwm';pin:Expression;duty:Expression;at:SourceLocation}
  | {kind:'write';pin:Expression;level:'HIGH'|'LOW'|Expression;at:SourceLocation}
  | {kind:'delay';duration:Expression;at:SourceLocation}
  | {kind:'if';left:Expression;right:Expression;operator:'=='|'!='|'>'|'<'|'>='|'<=';then:Statement[];otherwise:Statement[];at:SourceLocation};
 export interface Program { lessonId:LessonId;globals:Extract<Statement,{kind:'declare'}>[];setup:Statement[];loop:Statement[];loopAt:SourceLocation }
-const reserved=new Set(['analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
+const reserved=new Set(['analogRead','analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
 function tokenize(source:string):Token[] {
   if(source.length>limits.source)throw new ProgramError(`程式最多 ${limits.source} 個字元。`,{line:1,column:1});
   if(source.split('\n').length>limits.lines)throw new ProgramError(`程式最多 ${limits.lines} 行。`,{line:limits.lines+1,column:1});
@@ -38,7 +38,7 @@ function tokenize(source:string):Token[] {
     if(/[0-9]/.test(source[index])){let value='';while(index<source.length&&/[0-9]/.test(source[index]))value+=step();add(value,'integer',at);continue;}
     if(source.startsWith('++',index)||source.startsWith('--',index))throw new ProgramError('本課不支援 ++ 或 --；請使用明確賦值與加減。',at);
     if(source.startsWith('==',index)||source.startsWith('!=',index)||source.startsWith('>=',index)||source.startsWith('<=',index)){add(step()+step(),'punctuation',at);continue;}
-    if('(){};,=-+<>'.includes(source[index])){add(step(),'punctuation',at);continue;}
+    if('(){};,=-+<>/'.includes(source[index])){add(step(),'punctuation',at);continue;}
     throw new ProgramError(source[index]==='#'?'本課不支援 #include、#define 或其他前置處理指令。':`不支援符號「${source[index]}」。僅接受白名單 Arduino 語法。`,at);
   }
   tokens.push({text:'',kind:'end',line,column});return tokens;
@@ -57,13 +57,15 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
     }
     if(!negative&&allowConstants&&(token.text==='HIGH'||token.text==='LOW')){take();return {kind:'integer',value:token.text==='HIGH'?1:0,at:token};}
     if(!negative&&allowRead&&hasButton(lessonId)&&token.text==='digitalRead'){take();expect('(');const pin=expression();expect(')');return {kind:'read',pin,at:token};}
+    if(!negative&&allowRead&&lessonId==='pot-dimming'&&token.text==='analogRead'){take();expect('(');const pin=expression();expect(')');return {kind:'analog',pin,at:token};}
     if(!negative&&advanced&&allowRead&&token.text==='millis'){take();expect('(');expect(')');return {kind:'millis',at:token};}
     if(!negative&&token.kind==='name'&&!reserved.has(token.text)){take();return {kind:'variable',name:token.text,at:token};}
     throw new ProgramError('此處只支援整數常值或已宣告的整數變數，不支援算式。',token);
   };
   const expression=(allowRead=false,allowConstants=false):Expression=>{
-    let left=atom(allowRead,allowConstants),terms=1;
-    while(advanced&&(peek().text==='+'||peek().text==='-')){const op=take();if(++terms>32)throw new ProgramError('每個算式最多 32 項。',op);left={kind:'binary',left,right:atom(allowRead,allowConstants),operator:op.text as '+'|'-',at:op};}return left;
+    let terms=1;const limit=(at:SourceLocation)=>{if(++terms>32)throw new ProgramError('每個算式最多 32 項。',at);};
+    const term=():Expression=>{let left=atom(allowRead,allowConstants);while(lessonId==='pot-dimming'&&peek().text==='/'){const op=take();limit(op);left={kind:'binary',left,right:atom(allowRead,allowConstants),operator:'/',at:op};}return left;};
+    let left=term();while(advanced&&(peek().text==='+'||peek().text==='-')){const op=take();limit(op);left={kind:'binary',left,right:term(),operator:op.text as '+'|'-',at:op};}return left;
   };
   const declaration=(allowRead=false):Extract<Statement,{kind:'declare'}>=>{
     const at=expect('int');const name=take();
@@ -83,7 +85,7 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
       const then=branch();let otherwise:Statement[]=[];if(peek().text==='else'){take();otherwise=branch();}return {kind:'if',left,right,operator:operator.text as Extract<Statement,{kind:'if'}>['operator'],then,otherwise,at};
     }
     if(advanced&&at.kind==='name'&&!reserved.has(at.text)&&peek().text==='='){take();const value=expression(true,true);expect(';');return {kind:'assign',name:at.text,value,at};}
-    if(!['pinMode','digitalWrite','delay',...(lessonId==='pwm-breathing'?['analogWrite']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
+    if(!['pinMode','digitalWrite','delay',...(hasPWM(lessonId)?['analogWrite']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
     expect('(');const value=expression(advanced,advanced);
     if(at.text==='delay'){expect(')');expect(';');return {kind:'delay',duration:value,at};}
     expect(',');
@@ -91,8 +93,8 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
     if(at.text==='digitalWrite'&&advanced){const level=expression(true,true);expect(')');expect(';');return {kind:'write',pin:value,level,at};}
     const constant=take();
     if(at.text==='pinMode'){
-      if(constant.text!=='OUTPUT'&&!(hasButton(lessonId)&&constant.text==='INPUT_PULLUP'))throw new ProgramError(hasButton(lessonId)?'pinMode 只支援 GPIO23 OUTPUT 與 GPIO18 INPUT_PULLUP。':'pinMode 目前只支援 OUTPUT。',constant);
-      expect(')');expect(';');return {kind:'pinMode',pin:value,mode:constant.text as 'OUTPUT'|'INPUT_PULLUP',at};
+      if(constant.text!=='OUTPUT'&&!(hasButton(lessonId)&&constant.text==='INPUT_PULLUP')&&!(lessonId==='pot-dimming'&&constant.text==='INPUT'))throw new ProgramError(lessonId==='pot-dimming'?'pinMode 只支援 GPIO34 INPUT 與 GPIO23 OUTPUT。':hasButton(lessonId)?'pinMode 只支援 GPIO23 OUTPUT 與 GPIO18 INPUT_PULLUP。':'pinMode 目前只支援 OUTPUT。',constant);
+      expect(')');expect(';');return {kind:'pinMode',pin:value,mode:constant.text as 'OUTPUT'|'INPUT_PULLUP'|'INPUT',at};
     }
     if(constant.text!=='HIGH'&&constant.text!=='LOW')throw new ProgramError('digitalWrite 的第二個參數只支援 HIGH 或 LOW。',constant);
     expect(')');expect(';');return {kind:'write',pin:value,level:constant.text,at};
