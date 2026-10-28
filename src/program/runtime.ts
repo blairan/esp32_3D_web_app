@@ -4,10 +4,10 @@ import { limits, ProgramError } from './language.ts';
 import type { Program, Statement, Expression, SourceLocation, ProgramDiagnostic } from './language.ts';
 export type InputLevel='HIGH'|'LOW'|null;
 export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';line:number}
-export interface ProgramSnapshot {outputs:Record<number,{enabled:boolean;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
+export interface ProgramSnapshot {variables:Record<string,number>;outputs:Record<number,{enabled:boolean;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
 export type RunStatus='idle'|'starting'|'running'|'paused'|'stopped'|'error';
 export interface ProgramState extends ProgramSnapshot {status:RunStatus;diagnostic:ProgramDiagnostic|null}
-export const initialProgramState:ProgramState={outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
+export const initialProgramState:ProgramState={variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
 const gpioPins=new Map(pins.filter(pin=>pin.gpio!==null).map(pin=>[pin.gpio!,pin]));
 interface Frame {body:Statement[];pc:number;locals:Map<string,number>}
 export class ProgramRuntime {
@@ -20,6 +20,8 @@ export class ProgramRuntime {
  private frame(body:Statement[]):Frame{return {body,pc:0,locals:new Map()};}
  setInput(input:InputLevel){this.input=input;}
  private value(expression:Expression):number {
+  if(expression.kind==='millis')return this.time;
+  if(expression.kind==='binary'){const left=this.value(expression.left),right=this.value(expression.right);const value=expression.operator==='+'?left+right:left-right;if(!Number.isInteger(value)||value < -2147483648||value>2147483647)throw new ProgramError('整數算式超過 32 位元有號範圍。',expression.at);return value;}
   if(expression.kind==='integer')return expression.value;
   if(expression.kind==='read'){
    this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError('請先執行 pinMode(18, INPUT_PULLUP)，才能 digitalRead。',expression.at);
@@ -30,7 +32,8 @@ export class ProgramRuntime {
   const value=this.globals.get(expression.name);if(value===undefined)throw new ProgramError(`未知變數「${expression.name}」，請先用 int 宣告。`,expression.at);return value;
  }
  private declareVariable(statement:Extract<Statement,{kind:'declare'}>,scope:Map<string,number>){
-  if((statement.value.kind==='variable'&&statement.value.name===statement.name)||(statement.value.kind==='read'&&statement.value.pin.kind==='variable'&&statement.value.pin.name===statement.name))throw new ProgramError('變數不能在自己的初始值中引用自己。',statement.at);
+  const refers=(value:Expression):boolean=>value.kind==='variable'?value.name===statement.name:value.kind==='binary'?refers(value.left)||refers(value.right):value.kind==='read'?refers(value.pin):false;
+  if(refers(statement.value))throw new ProgramError('變數不能在自己的初始值中引用自己。',statement.at);
   if(scope.has(statement.name))throw new ProgramError(`變數「${statement.name}」在同一作用域重複宣告。`,statement.at);
   scope.set(statement.name,this.value(statement.value));
  }
@@ -46,7 +49,7 @@ export class ProgramRuntime {
   }
   return gpio;
  }
- snapshot():ProgramSnapshot{return {outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
+ snapshot():ProgramSnapshot{return {variables:Object.fromEntries(this.globals),outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
  advanceTo(target:number):ProgramSnapshot {
   if(!Number.isSafeInteger(target)||target<this.time||target>limits.virtualTime)throw new ProgramError('虛擬時間超過上限，請重設後再執行。',this.program.loopAt);
   let tickOperations=0;const started=performance.now();
@@ -63,13 +66,14 @@ export class ProgramRuntime {
    const statement=frame.body[frame.pc++];this.line=statement.at.line;
    if(++tickOperations>limits.operationsPerTick||++this.operations>limits.totalOperations||performance.now()-started>20)throw new ProgramError('執行預算已用完，程式已停止。請增加 delay 或縮短程式。',statement.at);
    switch(statement.kind){
+    case 'assign':{let scope:Map<string,number>|undefined;for(let i=this.frames.length-1;i>=0;i--)if(this.frames[i].locals.has(statement.name)){scope=this.frames[i].locals;break;}scope??=this.globals.has(statement.name)?this.globals:undefined;if(!scope)throw new ProgramError(`未知變數「${statement.name}」，請先用 int 宣告。`,statement.at);scope.set(statement.name,this.value(statement.value));break;}
     case 'declare':this.declareVariable(statement,frame.locals);break;
     case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode==='INPUT_PULLUP'?'input':'output');if(statement.mode==='INPUT_PULLUP')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===23)this.outputEnabled=true;}break;}
     case 'write':{
      const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 digitalWrite。`,statement.at);
-     this.outputs.set(gpio,{enabled:true,level:statement.level});if(gpio===23)this.level=statement.level;this.trace.push({gpio,timeMs:this.time,level:statement.level,line:this.line});this.trace=this.trace.slice(-8);break;}
+     const value=typeof statement.level==='string'?statement.level==='HIGH'?1:0:this.value(statement.level);if(value!==0&&value!==1)throw new ProgramError('digitalWrite 電位只接受 HIGH／LOW 或值為 0／1 的整數。',statement.at);const level=value===1?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level});if(gpio===23)this.level=level;this.trace.push({gpio,timeMs:this.time,level,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'if':{
-     const equal=this.value(statement.left)===this.value(statement.right);const body=(statement.operator==='=='?equal:!equal)?statement.then:statement.otherwise;
+     const left=this.value(statement.left),right=this.value(statement.right);const match=statement.operator==='=='?left===right:statement.operator==='!='?left!==right:statement.operator==='>'?left>right:statement.operator==='<'?left<right:statement.operator==='>='?left>=right:left<=right;const body=match?statement.then:statement.otherwise;
      this.frames.push(this.frame(body));break;
     }
     case 'delay':{

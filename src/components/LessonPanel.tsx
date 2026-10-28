@@ -1,3 +1,4 @@
+import {buttonExercise} from '../buttonExercises';
 import DualLessonPanel from './DualLessonPanel';
 import ButtonControl,{type ButtonControlProps} from './ButtonControl';
 import {useWiki} from '../wiki/WikiProvider';
@@ -6,12 +7,12 @@ import { BookOpen, CheckCircle2, Trash2, Lightbulb, TriangleAlert, ArrowRight } 
 import type { CircuitAction, CircuitAnalysis, CircuitState } from '../circuit';
 interface Props {buttonControl?:ButtonControlProps;state:CircuitState;analysis:CircuitAnalysis;dispatch:(action:CircuitAction)=>void}
 export default function LessonPanel({buttonControl,state,analysis,dispatch}:Props) {
-  const openWiki=useWiki();
+  const openWiki=useWiki();const exercise=buttonExercise(state.lessonId);
   if((state.lessonId==='dual-led'||state.lessonId==='traffic-light'))return <DualLessonPanel state={state} analysis={analysis} dispatch={dispatch}/>;
   return <aside className="inspector lesson-inspector" aria-label="LED 教學與輸出控制">
-    <p className="lesson-index"><span>01</span> / 外接 LED</p>
-    <h2>{buttonControl?'接好 LED 與按鈕':'完成第一個電路'}</h2><p className="lesson-intro">依照步驟接線，再用 HIGH／LOW 控制亮滅。</p>
-    <button type="button" className="wiki-link lesson-wiki-link" onClick={event=>openWiki(buttonControl?topicArticles.button:topicArticles.led,event.currentTarget)}><BookOpen size={14}/>了解接線原理</button>
+    <p className="lesson-index"><span>{exercise?.number??(buttonControl?'02':'01')}</span> / {exercise?exercise.title:buttonControl?'按鈕控制 LED':'外接 LED'}</p>
+    <h2>{buttonControl?'接好 LED 與按鈕':'完成第一個電路'}</h2><p className="lesson-intro">{exercise?'接線與第二課相同；在此手動檢查，再到程式練習完成去彈跳與狀態更新。':'依照步驟接線，再用 HIGH／LOW 控制亮滅。'}</p>
+    <button type="button" className="wiki-link lesson-wiki-link" onClick={event=>openWiki(exercise?exercise.topic:buttonControl?topicArticles.button:topicArticles.led,event.currentTarget)}><BookOpen size={14}/>了解接線原理</button>
     <div className="circuit-flow" aria-label="GPIO23 經 220 歐姆電阻、LED 連接 GND"><span>GPIO23</span><ArrowRight size={14}/><span>220 Ω</span><ArrowRight size={14}/><Lightbulb size={23}/><ArrowRight size={14}/><span>GND</span></div>
     <ol className="lesson-steps"><li><span>將 GPIO23 連到電阻的 <strong>A 端</strong>。</span></li><li><span>將電阻 <strong>B 端</strong>連到 LED <strong>正極 A+</strong>。</span></li><li><span>將 LED <strong>負極 K−</strong>連到任一 <strong>GND</strong>。</span></li></ol>
     {buttonControl?<ol className="lesson-steps button-wiring-steps"><li><span>GPIO18（J3-09）接按鈕 <strong>A1 或 A2</strong>。</span></li><li><span>按鈕 <strong>B1 或 B2</strong>接任一 GND；不可兩條都接同側。</span></li></ol>:null}

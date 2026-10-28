@@ -1,4 +1,4 @@
-import {lessons,type LessonId} from '../lessons';
+import {lessons,hasButton,type LessonId} from '../lessons';
 import * as THREE from 'three';
 import { pinById } from '../board';
 import { wireColor, currentPath } from '../circuit';
@@ -65,7 +65,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     ledVisuals.push({material:ledMaterial,halo,baseColor});
   }
   let buttonCap:THREE.Mesh|null=null;
-  if(lessonId==='button-led'){
+  if(hasButton(lessonId)){
     const housing=new THREE.Mesh(new THREE.BoxGeometry(12,12,2.5),new THREE.MeshStandardMaterial({color:0x26303e,roughness:.55}));materials.push(housing.material);housing.position.set(35.5,-11.5,1);group.add(housing);
     buttonCap=new THREE.Mesh(new THREE.CylinderGeometry(3.1,3.1,2,24),green);buttonCap.rotation.x=Math.PI/2;buttonCap.position.set(35.5,-11.5,3.3);group.add(buttonCap);
     const target=new THREE.Mesh(new THREE.SphereGeometry(3.4,16,12),pick);target.position.set(35.5,-11.5,4);target.userData.pinId='button:press';hitboxes.push(target);group.add(target);

@@ -137,3 +137,12 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - 沿用範例顯示／隱藏還原；暫停保持，停止／重設清除三輸出，課程切換須確認並清除練習。
 - 82 項資料與執行測試及正式建置通過。瀏覽器證據與限制見 [traffic-light-lesson.md](traffic-light-lesson.md)。
 - 下一個最小步驟：使用者試用第四課；第五課按一次切換／去彈跳尚未開始。
+
+### 2026-10-28：第五、六課完成
+
+- `?lesson=button-toggle#code`：按一次切換 LED，50ms 穩定判定與下降邊緣觸發。
+- `?lesson=button-counter#code`：有效按下只加一，通用全域整數觀察區，LED 表示穩定按下。
+- 兩課共用 GPIO18／GPIO23 五線接法；空架構、課程補全、可展開答案與三篇 Wiki（共 14 篇）。
+- 僅新兩課擴充 millis、受限賦值與整數加減、比較和四層 if；舊課維持限制。
+- 92 項測試、建置及正式產物瀏覽器檢查通過，詳細教學契約與限制見 [stateful-button-lessons.md](stateful-button-lessons.md)。
+- 下一步：使用者試用兩課；第七課主動式蜂鳴器尚未開始。

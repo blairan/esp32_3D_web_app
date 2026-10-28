@@ -1,4 +1,4 @@
-import type {LessonId} from '../lessons.ts';
+import {hasStatefulButton,type LessonId} from '../lessons.ts';
 export interface Suggestion {label:string;detail:string;template:string;type:string}
 export const lessonSuggestions:Suggestion[]=[
  {label:'pinMode',detail:'pinMode(pin, OUTPUT) · 設定輸出接腳',template:'pinMode(${1:23}, ${2:OUTPUT});',type:'function'},
@@ -15,7 +15,8 @@ export function declaredVariables(before:string):string[]{
  }
  return [...new Set(scopes.flat())];
 }
-export function suggestionsFor(lessonId:LessonId){
+export function suggestionsFor(lessonId:LessonId):Suggestion[]{
+ if(hasStatefulButton(lessonId))return [...suggestionsFor('button-led').map(item=>item.label==='if'?{...item,detail:'單一比較 == != > < >= <=；最多四層 if'}:item.label==='digitalWrite'?{...item,detail:'digitalWrite(pin, HIGH/LOW 或 0／1 變數)'}:item),{label:'millis',detail:'millis() · 取得目前虛擬毫秒，暫停時不增加',template:'millis()',type:'function'}];
  if(lessonId==='traffic-light')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 紅 GPIO23／黃 GPIO22／綠 GPIO21'}:item);
  if(lessonId==='dual-led')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 可用 GPIO23／GPIO22'}:item);
  if(lessonId==='blink')return lessonSuggestions;
@@ -24,7 +25,7 @@ export function suggestionsFor(lessonId:LessonId){
  {label:'INPUT_PULLUP',detail:'內建上拉輸入，按下為 LOW',template:'INPUT_PULLUP',type:'constant'},
  {label:'if',detail:'if (比較) { … } else { … } · 單一條件分支',template:'if (${1:buttonState} == ${2:LOW}) {\n  ${3}\n} else {\n  ${4}\n}',type:'keyword'}];
 }
-export function scaffoldFor(lessonId:LessonId){return lessonId==='traffic-light'?programScaffold:lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
+export function scaffoldFor(lessonId:LessonId){return hasStatefulButton(lessonId)?`// 在函式外宣告需要保留的整數狀態\nvoid setup() {\n  // 設定 LED 輸出與按鈕上拉\n}\n\nvoid loop() {\n  // 讀取按鈕、檢查穩定時間，再更新狀態\n  // 安排正值等待\n}\n`:lessonId==='traffic-light'?programScaffold:lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
 const buttonScaffold=`void setup() {
   // 設定 LED 輸出與按鈕內建上拉
 }

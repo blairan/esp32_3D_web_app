@@ -1,4 +1,4 @@
-import {lessons,type LessonId} from './lessons.ts';
+import {lessons,hasButton,type LessonId} from './lessons.ts';
 import { pins, pinById, titleFor } from './board.ts';
 
 export type OutputLevel = 'HIGH' | 'LOW';
@@ -31,7 +31,7 @@ export function exampleWires(lessonId:LessonId='blink'): CircuitWire[] {
     { id: 'example-3', from: 'led:k', to: 'J3-07' },
     ...((lessonId==='dual-led'||lessonId==='traffic-light')?[{id:'example-4',from:'J3-03',to:'resistor2:a'},{id:'example-5',from:'resistor2:b',to:'led2:a'},{id:'example-6',from:'led2:k',to:'J2-14'}]:[]),
     ...(lessonId==='traffic-light'?[{id:'example-7',from:'J3-06',to:'resistor3:a'},{id:'example-8',from:'resistor3:b',to:'led3:a'},{id:'example-9',from:'led3:k',to:'J3-01'}]:[]),
-    ...(lessonId==='button-led'?[{id:'example-4',from:'J3-09',to:'button:a1'},{id:'example-5',from:'button:b1',to:'J2-14'}]:[]),
+    ...(hasButton(lessonId)?[{id:'example-4',from:'J3-09',to:'button:a1'},{id:'example-5',from:'button:b1',to:'J2-14'}]:[]),
   ];
 }
 export function wireError(wires: CircuitWire[], from: string, to: string,lessonId:LessonId='blink'): string | null {
@@ -79,7 +79,7 @@ export function analyzeCircuit(wires: CircuitWire[], level: OutputLevel,lessonId
   const active = new Set(wires.flatMap(w => [w.from, w.to]));
   for (const id of active) {
     const pin = pinById.get(id);
-    if (pin && pin.pinId !== lessonDefinition.source && pin.role !== 'ground' && !(lessonId==='button-led'&&pin.gpio===18)) {
+    if (pin && pin.pinId !== lessonDefinition.source && pin.role !== 'ground' && !(hasButton(lessonId)&&pin.gpio===18)) {
       const reason = pin.category === 'input' ? '此腳只能輸入，不能驅動 LED。' : pin.category === 'reserved' ? '此腳保留給 Flash，禁止接線。' : pin.role !== 'gpio' ? '這不是本課支援的 GPIO 輸出。' : '本課固定使用 GPIO23，其他 GPIO 尚未支援。';
       return result('unsupported', '使用了不支援的接腳', `${terminalLabel(id)}：${reason}`);
     }
@@ -95,7 +95,7 @@ export function analyzeCircuit(wires: CircuitWire[], level: OutputLevel,lessonId
   // Three distinct physical GND pins share one electrical reference.
   lessonDefinition.groundIds.forEach(id => union(id, 'J3-01'));
   wires.forEach(wire => union(wire.from, wire.to));
-  if(lessonId==='button-led'){union('button:a1','button:a2');union('button:b1','button:b2');const input=analyzeButton(wires,false);if(input.code==='invalid')return result('unsupported',input.title,input.description);}
+  if(hasButton(lessonId)){union('button:a1','button:a2');union('button:b1','button:b2');const input=analyzeButton(wires,false);if(input.code==='invalid')return result('unsupported',input.title,input.description);}
   const same = (a: string, b: string) => root(a) === root(b);
   const source = lessons[lessonId].source, ground = 'J3-01';
   if (same(source, ground)) return result('short', 'GPIO23 與 GND 短路', '輸出腳不能直接接地。請刪除旁路導線，讓路徑依序經過電阻與 LED。');
