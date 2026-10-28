@@ -16,6 +16,7 @@ export function declaredVariables(before:string):string[]{
  return [...new Set(scopes.flat())];
 }
 export function suggestionsFor(lessonId:LessonId){
+ if(lessonId==='traffic-light')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 紅 GPIO23／黃 GPIO22／綠 GPIO21'}:item);
  if(lessonId==='dual-led')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 可用 GPIO23／GPIO22'}:item);
  if(lessonId==='blink')return lessonSuggestions;
  return [...lessonSuggestions.map(item=>item.label==='pinMode'?{...item,detail:'GPIO23 OUTPUT／GPIO18 INPUT_PULLUP',template:'pinMode(${1:18}, ${2:INPUT_PULLUP});'}:item),
@@ -23,7 +24,7 @@ export function suggestionsFor(lessonId:LessonId){
  {label:'INPUT_PULLUP',detail:'內建上拉輸入，按下為 LOW',template:'INPUT_PULLUP',type:'constant'},
  {label:'if',detail:'if (比較) { … } else { … } · 單一條件分支',template:'if (${1:buttonState} == ${2:LOW}) {\n  ${3}\n} else {\n  ${4}\n}',type:'keyword'}];
 }
-export function scaffoldFor(lessonId:LessonId){return lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
+export function scaffoldFor(lessonId:LessonId){return lessonId==='traffic-light'?programScaffold:lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
 const buttonScaffold=`void setup() {
   // 設定 LED 輸出與按鈕內建上拉
 }

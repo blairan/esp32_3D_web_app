@@ -41,4 +41,5 @@ void loop() {
 }
 `,notes:['兩顆 LED 各用一顆 220 Ω 電阻；GPIO23 對應 LED 1，GPIO22 對應 LED 2。','兩個接腳都先設定 OUTPUT；設定其中一腳不會自動設定另一腳。','每個階段都明確寫出兩顆 LED 的電位。各維持 1000 毫秒，完整循環為 2 秒。','這些是循序執行的陳述，不是假裝兩個寫入同時發生；本課不需要新增 if、迴圈或其他語法。']},
 
+ 'traffic-light':{title:'紅黃綠交通號誌參考解法',code:"int red = 23;\nint yellow = 22;\nint green = 21;\n\nvoid setup() {\n  pinMode(red, OUTPUT);\n  pinMode(yellow, OUTPUT);\n  pinMode(green, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(yellow, LOW);\n  digitalWrite(green, LOW);\n  digitalWrite(red, HIGH);\n  delay(3000);\n\n  digitalWrite(red, LOW);\n  digitalWrite(green, HIGH);\n  delay(3000);\n\n  digitalWrite(green, LOW);\n  digitalWrite(yellow, HIGH);\n  delay(1000);\n}\n",notes:['三顆 LED 各有一顆 220 Ω 電阻；紅 GPIO23、黃 GPIO22、綠 GPIO21。','setup 逐一設定三個 OUTPUT；每階段先關閉前一顆再點亮下一顆。','紅 3000 毫秒 → 綠 3000 毫秒 → 黃 1000 毫秒，完整週期為 7000 毫秒。','這是簡化教學號誌，沒有行人、交叉路口、真實交通控制或硬體安全保證。']},
 };

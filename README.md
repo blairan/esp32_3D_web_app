@@ -64,3 +64,5 @@ npm run preview
 ## 第三組專題：雙 LED 交替閃爍
 
 右上「學習專題」新增第三課，網址 `?lesson=dual-led#code`。GPIO23 對應 LED 1、GPIO22 對應 LED 2，各使用一顆 220 Ω 電阻，支援六條範例接線、獨立手動輸出／診斷／電流，以及程式交替控制。預設仍為空架構，可查看第三課標準答案；Wiki 共十篇。詳見 [雙 LED 課程與驗證](docs/dual-led-lesson.md)。
+
+第四課：[紅黃綠交通號誌](https://blairan.github.io/esp32_3D_web_app/?lesson=traffic-light#code)（紅 GPIO23、黃 GPIO22、綠 GPIO21）。九線範例、三輸出、3／3／1 秒時序、練習架構、主動展開標準答案與第 11 篇 Wiki。詳見 [課程契約與驗證](docs/traffic-light-lesson.md)。目前資料與執行測試共 82 項。
