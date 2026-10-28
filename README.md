@@ -37,7 +37,7 @@ npm run preview
 
 ## 驗證狀態
 
-126 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+138 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -74,3 +74,5 @@ npm run preview
 第九課：[RGB 混色](https://blairan.github.io/esp32_3D_web_app/?lesson=rgb-mixing#code)；第十課：[電位器調光](https://blairan.github.io/esp32_3D_web_app/?lesson=pot-dimming#code)。共陰極 RGB 七線、GPIO34（J2-05）ADC 六線；空白架構、課程補全、Wiki 與標準答案。最新共 114 項測試、18 篇 Wiki，詳見 [教學契約與驗證](docs/rgb-pot-lessons.md)。
 
 第十一課：[光敏電阻夜燈](https://blairan.github.io/esp32_3D_web_app/?lesson=ldr-nightlight#code)；第十二課：[伺服馬達角度控制](https://blairan.github.io/esp32_3D_web_app/?lesson=servo-angle#code)。光敏分壓 ADC＋遲滯門檻、外部供電與單一 Servo 物件；最新共 126 項測試、20 篇 Wiki。詳見 [教學契約與驗證](docs/light-servo-lessons.md)。
+
+第十三課：[超音波測距警示](https://blairan.github.io/esp32_3D_web_app/?lesson=ultrasonic-alert#code)；第十四課：[PIR 人體感測延遲燈](https://blairan.github.io/esp32_3D_web_app/?lesson=pir-delay#code)。Echo 分壓、理想回波與無回波、PIR 虛擬延遲／重新計時；最新共 138 項測試、22 篇 Wiki。詳見 [教學契約與驗證](docs/motion-range-lessons.md)。

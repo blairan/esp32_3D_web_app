@@ -1,3 +1,4 @@
+import MotionRangeLessonPanel from './MotionRangeLessonPanel';
 import EnvironmentLessonPanel from './EnvironmentLessonPanel';
 import AnalogLessonPanel from './AnalogLessonPanel';
 import LoadLessonPanel from './LoadLessonPanel';
@@ -11,6 +12,7 @@ import type { CircuitAction, CircuitAnalysis, CircuitState } from '../circuit';
 interface Props {buttonControl?:ButtonControlProps;state:CircuitState;analysis:CircuitAnalysis;dispatch:(action:CircuitAction)=>void}
 export default function LessonPanel({buttonControl,state,analysis,dispatch}:Props) {
   const openWiki=useWiki();const exercise=buttonExercise(state.lessonId);
+  if(state.lessonId==='ultrasonic-alert'||state.lessonId==='pir-delay')return <MotionRangeLessonPanel state={state} analysis={analysis} dispatch={dispatch}/>;
   if(state.lessonId==='ldr-nightlight'||state.lessonId==='servo-angle')return <EnvironmentLessonPanel state={state} analysis={analysis} dispatch={dispatch}/>;
   if(state.lessonId==='rgb-mixing'||state.lessonId==='pot-dimming')return <AnalogLessonPanel state={state} analysis={analysis} dispatch={dispatch}/>;
   if(state.lessonId==='buzzer-doorbell'||state.lessonId==='pwm-breathing')return <LoadLessonPanel state={state} analysis={analysis} dispatch={dispatch} buttonControl={buttonControl}/>;

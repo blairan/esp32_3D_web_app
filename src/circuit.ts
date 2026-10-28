@@ -4,10 +4,11 @@ import { pins, pinById, titleFor } from './board.ts';
 export type OutputLevel = 'HIGH' | 'LOW';
 export interface CircuitWire { id: string; from: string; to: string }
 export interface CircuitState {
-  lessonId:LessonId; wires: CircuitWire[]; pending: string | null; level: OutputLevel;level2:OutputLevel;level3:OutputLevel;duty:number;rgb:[number,number,number];pot:number;light:number;servoAngle:number;
+  lessonId:LessonId; wires: CircuitWire[]; pending: string | null; level: OutputLevel;level2:OutputLevel;level3:OutputLevel;duty:number;rgb:[number,number,number];pot:number;light:number;servoAngle:number;distance:number;echo:boolean;motion:boolean;
   notice: string; nextWire: number; exampleBackup: CircuitWire[] | null;
 }
 export type CircuitAction =
+  | {type:'distance';value:number}|{type:'echo';value:boolean}|{type:'motion';value:boolean}
   | {type:'light';value:number}|{type:'servo-angle';angle:number}
   | {type:'rgb';index:0|1|2;value:number}|{type:'pot';value:number}
   | {type:'duty';duty:number}
@@ -20,7 +21,7 @@ export const lessonDefinition = {
   groundIds: ['J3-01', 'J3-07', 'J2-14'],
   parts: { 'resistor:a': '電阻 A 端', 'resistor:b': '電阻 B 端', 'led:a': 'LED 正極 A+', 'led:k': 'LED 負極 K−' },
 } as const;
-export const initialCircuitState: CircuitState = { lessonId:'blink', wires: [], pending: null, level: 'LOW',level2:'LOW',level3:'LOW',duty:0,rgb:[0,0,0],pot:2048,light:3072,servoAngle:90, notice: '', nextWire: 1, exampleBackup: null };
+export const initialCircuitState: CircuitState = { lessonId:'blink', wires: [], pending: null, level: 'LOW',level2:'LOW',level3:'LOW',duty:0,rgb:[0,0,0],pot:2048,light:3072,servoAngle:90,distance:100,echo:true,motion:false, notice: '', nextWire: 1, exampleBackup: null };
 export function isTerminal(id: string,lessonId:LessonId='blink') { return pinById.has(id) || Object.hasOwn(lessons[lessonId].parts, id); }
 export function terminalLabel(id: string,lessonId:LessonId='blink'): string {
   const pin = pinById.get(id);
@@ -28,6 +29,8 @@ export function terminalLabel(id: string,lessonId:LessonId='blink'): string {
   return (lessons[lessonId].parts as Record<string,string>)[id]??(lessons['button-led'].parts as Record<string,string>)[id]??(lessons['dual-led'].parts as Record<string,string>)[id]??'未知端點';
 }
 export function exampleWires(lessonId:LessonId='blink'): CircuitWire[] {
+  if(lessonId==='ultrasonic-alert')return [{id:'example-1',from:'J3-02',to:'resistor:a'},{id:'example-2',from:'resistor:b',to:'led:a'},{id:'example-3',from:'led:k',to:'J3-07'},{id:'example-4',from:'supply:plus',to:'ultra:vcc'},{id:'example-5',from:'ultra:gnd',to:'supply:minus'},{id:'example-6',from:'supply:minus',to:'J2-14'},{id:'example-7',from:'J3-03',to:'ultra:trig'},{id:'example-8',from:'ultra:echo',to:'echo1:a'},{id:'example-9',from:'echo1:b',to:'echo2:a'},{id:'example-10',from:'echo2:b',to:'J3-01'},{id:'example-11',from:'echo1:b',to:'J2-05'}];
+  if(lessonId==='pir-delay')return [{id:'example-1',from:'J3-02',to:'resistor:a'},{id:'example-2',from:'resistor:b',to:'led:a'},{id:'example-3',from:'led:k',to:'J3-07'},{id:'example-4',from:'supply:plus',to:'pir:vcc'},{id:'example-5',from:'pir:gnd',to:'supply:minus'},{id:'example-6',from:'supply:minus',to:'J2-14'},{id:'example-7',from:'pir:out',to:'J2-11'}];
   if(lessonId==='servo-angle')return [{id:'example-1',from:'J3-02',to:'servo:s'},{id:'example-2',from:'supply:plus',to:'servo:vcc'},{id:'example-3',from:'servo:gnd',to:'supply:minus'},{id:'example-4',from:'supply:minus',to:'J3-07'}];
   if(lessonId==='rgb-mixing')return [{id:'example-1',from:'J3-02',to:'resistor:a'},{id:'example-2',from:'resistor:b',to:'rgb:r'},{id:'example-3',from:'J3-03',to:'resistor2:a'},{id:'example-4',from:'resistor2:b',to:'rgb:g'},{id:'example-5',from:'J3-06',to:'resistor3:a'},{id:'example-6',from:'resistor3:b',to:'rgb:b'},{id:'example-7',from:'rgb:k',to:'J3-07'}];
   if(lessonId==='buzzer-doorbell')return [{id:'example-1',from:'J3-02',to:'buzzer:s'},{id:'example-2',from:'J2-01',to:'buzzer:vcc'},{id:'example-3',from:'buzzer:gnd',to:'J3-07'},{id:'example-4',from:'J3-09',to:'button:a1'},{id:'example-5',from:'button:b1',to:'J2-14'}];
@@ -51,6 +54,9 @@ export function wireError(wires: CircuitWire[], from: string, to: string,lessonI
 }
 export function circuitReducer(state: CircuitState, action: CircuitAction): CircuitState {
   switch (action.type) {
+    case 'motion':return {...state,motion:action.value};
+    case 'echo':return {...state,echo:action.value};
+    case 'distance':return Number.isInteger(action.value)&&action.value>=2&&action.value<=400?{...state,distance:action.value}:state;
     case 'light':return Number.isInteger(action.value)&&action.value>=0&&action.value<=4095?{...state,light:action.value}:state;
     case 'servo-angle':return Number.isInteger(action.angle)&&action.angle>=0&&action.angle<=180?{...state,servoAngle:action.angle}:state;
     case 'pot':return Number.isInteger(action.value)&&action.value>=0&&action.value<=4095?{...state,pot:action.value}:state;
@@ -68,8 +74,8 @@ export function circuitReducer(state: CircuitState, action: CircuitAction): Circ
     case 'remove': return { ...state, wires: state.wires.filter(w => w.id !== action.id), pending: null, notice: '已刪除導線。' };
     case 'level': return { ...state,...(action.gpio===21?{level3:action.level}:action.gpio===22?{level2:action.level}:{level:action.level}), notice: `GPIO${action.gpio??23} 輸出已設為 ${action.level}。` };
     case 'example': return state.exampleBackup !== null
-      ? { ...state, wires: state.exampleBackup, exampleBackup: null, pending: null, level: 'LOW', level2: 'LOW', level3: 'LOW', duty:0,rgb:[0,0,0],pot:2048,light:3072,servoAngle:90, notice: '已隱藏範例接線，恢復原本的接線。' }
-      : { ...state, exampleBackup: state.wires, wires: exampleWires(state.lessonId), pending: null, level: 'LOW', level2: 'LOW', level3: 'LOW', duty:0,rgb:[0,0,0],pot:2048,light:3072,servoAngle:90, notice: '已顯示範例接線；再按一次可隱藏並恢復原本的接線。' };
+      ? { ...state, wires: state.exampleBackup, exampleBackup: null, pending: null, level: 'LOW', level2: 'LOW', level3: 'LOW', duty:0,rgb:[0,0,0],pot:2048,light:3072,servoAngle:90,distance:100,echo:true,motion:false, notice: '已隱藏範例接線，恢復原本的接線。' }
+      : { ...state, exampleBackup: state.wires, wires: exampleWires(state.lessonId), pending: null, level: 'LOW', level2: 'LOW', level3: 'LOW', duty:0,rgb:[0,0,0],pot:2048,light:3072,servoAngle:90,distance:100,echo:true,motion:false, notice: '已顯示範例接線；再按一次可隱藏並恢復原本的接線。' };
     case 'lesson':return {...initialCircuitState,lessonId:action.lessonId};
     case 'clear': return { ...initialCircuitState,lessonId:state.lessonId, nextWire: state.nextWire, notice: '已清空接線，輸出回到 LOW。' };
     case 'cancel': return { ...state, pending: null, notice: '已取消接線起點。' };
@@ -80,6 +86,7 @@ export interface CircuitAnalysis {channels?:ChannelAnalysis[]; code: CircuitCode
 
 /** Discrete rules for one GPIO23, one 220-ohm resistor and one LED. No analog solver. */
 export function analyzeCircuit(wires: CircuitWire[], level: OutputLevel,lessonId:LessonId='blink',secondaryLevel:OutputLevel='LOW',thirdLevel:OutputLevel='LOW'): CircuitAnalysis {
+  if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay'){const sensor=analyzeMotionRange(wires,lessonId);if(!sensor.valid)return {...sensor,lit:false,title:'感測器接線無效'};const load=analyzeCircuit(potLedWires(wires),level);return load.valid?{...load,description:level==='HIGH'?'LED 支路有效，GPIO23 為 HIGH，LED 亮起。':'LED 支路有效；請在程式練習實作警示或延遲邏輯，原始輸入不直接控制 LED。'}:load;}
   if(lessonId==='servo-angle')return analyzeServo(wires,level==='HIGH');
   if(lessonId==='ldr-nightlight'){const input=analyzeLight(wires,0);return input.valid?analyzeCircuit(potLedWires(wires),level):{code:input.code,title:'光敏分壓接線無效',description:input.description,valid:false,lit:false};}
   if(lessonId==='rgb-mixing')return analyzeRGB(wires,[level,secondaryLevel,thirdLevel]);
@@ -141,6 +148,7 @@ export function wireColor(wire: CircuitWire): string {
 export interface CurrentSegment {id:string;kind:'wire'|'resistor'|'led';from:string;to:string}
 /** Conventional current direction, not electron speed or an analog current estimate. */
 export function currentPath(wires:CircuitWire[],level:OutputLevel,lessonId:LessonId='blink',secondaryLevel:OutputLevel='LOW',thirdLevel:OutputLevel='LOW'):CurrentSegment[]{
+  if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay')return analyzeMotionRange(wires,lessonId).valid?currentPath(potLedWires(wires),level):[];
   if(lessonId==='servo-angle')return analyzeServo(wires,level==='HIGH').lit?wires.filter(w=>[w.from,w.to].some(id=>id==='servo:vcc'||id==='servo:gnd')).map(w=>({...w,kind:'wire' as const,from:w.from==='servo:vcc'||w.to==='servo:gnd'?w.to:w.from,to:w.from==='servo:vcc'||w.to==='servo:gnd'?w.from:w.to})):[];
   if(lessonId==='ldr-nightlight')return analyzeLight(wires,0).valid?currentPath(potLedWires(wires),level):[];
   if(lessonId==='pot-dimming')return analyzePot(wires,0).valid?currentPath(potLedWires(wires),level):[];
@@ -279,4 +287,21 @@ export function analyzeServo(wires:CircuitWire[],active:boolean):CircuitAnalysis
  const same=wireRoots(wires);if(same('supply:plus','supply:minus')||same('J3-02','supply:plus')||same('J3-02','supply:minus')||same('supply:plus','J3-01'))return result('short','外部正極、接地與訊號不可短接。');
  if(!same('servo:s','J3-02')||!same('servo:vcc','supply:plus')||!same('servo:gnd','supply:minus')||!same('supply:minus','J3-01'))return result('open','GPIO23 → SIG、外部 5V → VCC、外部 GND → 伺服 GND，並與開發板 GND 共地。');
  if(same('servo:s','servo:vcc')||same('servo:s','servo:gnd'))return result('short','伺服端點不可互相短接。');return result('valid',active?'控制已啟用，角度由 write 決定。':'接線有效；程式需先 attach 再 write。');
+}
+
+export interface SensorWiring {valid:boolean;code:CircuitCode;description:string}
+export function analyzeMotionRange(wires:CircuitWire[],lessonId:'ultrasonic-alert'|'pir-delay'):SensorWiring{
+ const result=(code:CircuitCode,description:string):SensorWiring=>({valid:code==='valid',code,description});const seen:CircuitWire[]=[];for(const w of wires){if(wireError(seen,w.from,w.to,lessonId))return result('invalid','移除未知、重複或超過 12 條的接線。');seen.push(w);}
+ const ultra=lessonId==='ultrasonic-alert',prefix=ultra?'ultra':'pir',input=ultra?'J2-05':'J2-11',led=new Set(['J3-02',...Object.keys(lessonDefinition.parts)]),sensor=new Set([...Object.keys(lessons[lessonId].parts).filter(id=>!Object.hasOwn(lessonDefinition.parts,id)),input,...(ultra?['J3-03']:[])]),ground=new Set<string>(lessonDefinition.groundIds);
+ const allowed=new Set([...led,...sensor,...ground]);if(wires.some(w=>!allowed.has(w.from)||!allowed.has(w.to)))return result('unsupported','只接受本課指定訊號、外部 5V、共地與 LED 支路。');
+ if(wires.some(w=>(led.has(w.from)&&sensor.has(w.to))||(led.has(w.to)&&sensor.has(w.from))))return result('unsupported','感測器與 LED 輸出支路不可跨接。');
+ const same=wireRoots(wires),domains=['supply:plus','J3-01',input,'J3-02',...(ultra?['J3-03','ultra:echo']:[])];if(domains.some((a,i)=>domains.slice(i+1).some(b=>same(a,b))))return result('short','供電、輸出、Echo／OUT、TRIG 與 GND 不可直接短接。');
+ if(!same(prefix+':vcc','supply:plus')||!same(prefix+':gnd','supply:minus')||!same('supply:minus','J3-01'))return result('open','外部 5V → VCC、外部 GND → 模組 GND，並與開發板 GND 共地。');
+ if(wires.some(w=>(w.from==='supply:plus'&&w.to!==prefix+':vcc')||(w.to==='supply:plus'&&w.from!==prefix+':vcc')))return result('unsupported','外部 5V 只可連到感測器 VCC，不可進入訊號支路。');
+ if(!ultra){if(!same('pir:out',input))return result('open','PIR OUT（3.3V 邏輯）必須接 GPIO27。');return result('valid','理想 PIR OUT 有效；HIGH 表示偵測到活動。');}
+ if(!same('ultra:trig','J3-03'))return result('open','GPIO22 必須接超音波 TRIG。');
+ if(same('echo1:a','echo1:b')||same('echo2:a','echo2:b'))return result('resistor_bypassed','Echo 分壓電阻不可旁路。');
+ const between=(a:string,b:string,x:string,y:string)=>(same(a,x)&&same(b,y))||(same(a,y)&&same(b,x));
+ if(!between('echo1:a','echo1:b','ultra:echo',input)||!between('echo2:a','echo2:b',input,'J3-01'))return result('open','ECHO（5V）→ 1 kΩ → 分壓點／GPIO34 → 2 kΩ → GND，禁止 Echo 直接接 GPIO。');
+ return result('valid','理想 Echo 分壓有效；距離輸入不是實物測距。');
 }

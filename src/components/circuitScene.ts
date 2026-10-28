@@ -9,6 +9,9 @@ export const partPositions: Record<string, [number, number, number]> = {
   'led:a': [49, -1, 2], 'led:k': [59, -1, 2],
   'resistor2:a':[24.5,-16,2],'resistor2:b':[39.5,-16,2],'led2:a':[49,-25,2],'led2:k':[59,-25,2],
   'resistor3:a':[24.5,-40,2],'resistor3:b':[39.5,-40,2],'led3:a':[49,-49,2],'led3:k':[59,-49,2],
+  'ultra:vcc':[27,-20,2],'ultra:trig':[36,-20,2],'ultra:echo':[45,-20,2],'ultra:gnd':[54,-20,2],
+  'echo1:a':[26,-34,2],'echo1:b':[41,-34,2],'echo2:a':[48,-45,2],'echo2:b':[63,-45,2],
+  'pir:vcc':[28,-18,2],'pir:out':[38,-18,2],'pir:gnd':[48,-18,2],
   'ldr:a':[26,-14,2],'ldr:b':[44,-14,2],'divider:a':[26,-32,2],'divider:b':[44,-32,2],
   'servo:s':[30,-17,2],'servo:vcc':[39,-17,2],'servo:gnd':[48,-17,2],'supply:plus':[30,18,2],'supply:minus':[46,18,2],
   'rgb:r':[49,-1,2],'rgb:g':[49,-25,2],'rgb:b':[49,-49,2],'rgb:k':[65,-25,2],
@@ -69,6 +72,15 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   const haloMaterial=new THREE.MeshBasicMaterial({color:baseColor,transparent:true,opacity:.14,depthWrite:false});materials.push(haloMaterial);
   const halo=new THREE.Mesh(new THREE.CircleGeometry(5.5,36),haloMaterial);halo.position.set(54,7+offset,0);group.add(halo);halo.visible=false;
     ledVisuals.push({material:ledMaterial,halo,baseColor});
+  }
+  let pirDome:THREE.MeshPhysicalMaterial|null=null;
+  if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay'){
+   const ultra=lessonId==='ultrasonic-alert';const boardMaterial=new THREE.MeshStandardMaterial({color:0x2e5686,roughness:.55});materials.push(boardMaterial);const housing=new THREE.Mesh(new THREE.BoxGeometry(ultra?30:20,15,2),boardMaterial);housing.position.set(41,-7,1);group.add(housing);
+   if(ultra){for(const x of [33,49]){cylinder(5.5,4,x,-6,4,gray);const center=new THREE.Mesh(new THREE.CircleGeometry(4,24),boardMaterial);center.position.set(x,-6,6.1);group.add(center);}text('HC-SR04',41,4,20,2.5);
+    for(const [index,x,y] of [[1,33.5,-29],[2,55.5,-40]]){const resistor=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistor.rotation.z=Math.PI/2;resistor.position.set(x,y,2);group.add(resistor);const a=terminalPosition('echo'+index+':a')!,b=terminalPosition('echo'+index+':b')!;tube([a,new THREE.Vector3(x-4,y,2),new THREE.Vector3(x+4,y,2),b],gray);text(index+' kΩ',x,y+4.5,13,2.5);}
+   }else{pirDome=new THREE.MeshPhysicalMaterial({color:0xe5eaf2,roughness:.5,clearcoat:.3,emissive:0x000000});materials.push(pirDome);const dome=new THREE.Mesh(new THREE.SphereGeometry(7,20,16),pirDome);dome.position.set(41,-6,3);group.add(dome);text('PIR OUT 3V3',41,5,24,2.5);}
+   const sourceMaterial=new THREE.MeshStandardMaterial({color:0x596578});materials.push(sourceMaterial);const source=new THREE.Mesh(new THREE.BoxGeometry(22,9,3),sourceMaterial);source.position.set(38,26,2);group.add(source);text('EXTERNAL 5V',38,33,24,2.5);for(const id of ['supply:plus','supply:minus']){const p=terminalPosition(id)!;tube([p,new THREE.Vector3(p.x,22,2)],gray);text(id==='supply:plus'?'+5V':'GND',p.x,p.y-3,6);}
+   for(const id of ultra?['ultra:vcc','ultra:trig','ultra:echo','ultra:gnd']:['pir:vcc','pir:out','pir:gnd']){const pos=terminalPosition(id)!;tube([pos,new THREE.Vector3(pos.x,-14,1)],gray);text(id.split(':')[1].toUpperCase(),pos.x,pos.y-3,7);}
   }
   let sensorMaterial:THREE.MeshStandardMaterial|null=null,servoHorn:THREE.Group|null=null;
   if(lessonId==='ldr-nightlight'){
@@ -146,7 +158,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     },
     needsAnimation(){return enabled&&(lit||lit2||lit3)&&playing&&!reducedMotion&&!simple&&flowItems.some(item=>item.active);},
     animate(delta:number){if(this.needsAnimation()){phase=(phase+delta*.45)%1;positionFlow();}},
-    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048,lightPosition=3072,servoAngle=90){
+    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048,lightPosition=3072,servoAngle=90,motion=false){
       if(wires!==previousWires){
         clearWires();previousWires=wires;
         wires.forEach((wire,index)=>{
@@ -164,6 +176,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
           addFlow('led:'+l,new THREE.CatmullRomCurve3([new THREE.Vector3(49,-1+offset,2),new THREE.Vector3(52.4,5+offset,2),new THREE.Vector3(54,7+offset,5),new THREE.Vector3(55.5,5+offset,2),new THREE.Vector3(59,-1+offset,2)]),l+':a');
         }
       }
+      if(pirDome){pirDome.emissive.set(motion?0x183f86:0x000000);pirDome.emissiveIntensity=motion?.4:0;}
       if(sensorMaterial)sensorMaterial.color.setRGB(.3+.5*lightPosition/4095,.24+.45*lightPosition/4095,.16+.4*lightPosition/4095);
       if(servoHorn)servoHorn.rotation.z=((nextLit?servoAngle:90)-90)*Math.PI/180;
       if(rgbMaterial&&rgbHalo){const on=rgb.some(v=>v>0);const color=new THREE.Color(`rgb(${rgb.join(',')})`);rgbMaterial.color.copy(on?color:new THREE.Color(0x80909e));rgbMaterial.emissive.copy(color);rgbMaterial.emissiveIntensity=on?.8:0;(rgbHalo.material as THREE.MeshBasicMaterial).color.copy(color);rgbHalo.visible=on;}

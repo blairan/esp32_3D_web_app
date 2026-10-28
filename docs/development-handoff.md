@@ -168,3 +168,10 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - `?lesson=servo-angle#code`：外部 5V＋共地、GPIO23 訊號、單一 Servo 物件 attach／write，四線範例。
 - 126 項測試、正式建置與兩課瀏覽器流程通過；Wiki 共 20 篇；原十課亦經載入／接線回歸。
 - 詳見 [light-servo-lessons.md](light-servo-lessons.md)。下一個最小步驟：試用兩課；超音波測距尚未開始。
+
+### 2026-10-28：第十三、十四課完成
+
+- `?lesson=ultrasonic-alert#code`：外部 5V、Echo 1 kΩ／2 kΩ 分壓、GPIO22 TRIG／34 Echo、11 線範例、理想距離與無回波。
+- `?lesson=pir-delay#code`：3.3V OUT → GPIO27、外部 5V 並共地、7 線範例、虛擬 3000ms 延遲及再次活動重新計時。
+- 138 項測試、建置及兩課瀏覽器流程通過；Wiki 22 篇，原十二課載入／接線回歸通過。
+- 詳細契約與限制見 [motion-range-lessons.md](motion-range-lessons.md)。下一步：使用者試用；溫溼度課尚未開始。

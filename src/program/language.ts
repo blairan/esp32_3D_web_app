@@ -1,4 +1,4 @@
-import {hasButton,hasExtendedSyntax,hasPWM,hasADC,type LessonId} from '../lessons.ts';
+import {hasButton,hasExtendedSyntax,hasPWM,hasADC,hasDigitalRead,hasInputMode,type LessonId} from '../lessons.ts';
 export interface SourceLocation { line:number; column:number }
 export interface ProgramDiagnostic extends SourceLocation { message:string }
 export class ProgramError extends Error {
@@ -7,7 +7,7 @@ export class ProgramError extends Error {
 }
 export const limits = { source:12000, lines:400, tokens:4000, statements:256, delay:60000, operationsPerTick:500, totalOperations:100000, virtualTime:86400000 } as const;
 interface Token extends SourceLocation { text:string; kind:'name'|'integer'|'punctuation'|'end' }
-export type Expression = {kind:'analog';pin:Expression;at:SourceLocation}| {kind:'millis';at:SourceLocation}|{kind:'binary';left:Expression;right:Expression;operator:'+'|'-'|'/';at:SourceLocation}| {kind:'integer';value:number;at:SourceLocation}|{kind:'variable';name:string;at:SourceLocation}|{kind:'read';pin:Expression;at:SourceLocation};
+export type Expression = {kind:'pulse';pin:Expression;timeout:Expression;at:SourceLocation}| {kind:'analog';pin:Expression;at:SourceLocation}| {kind:'millis';at:SourceLocation}|{kind:'binary';left:Expression;right:Expression;operator:'+'|'-'|'/';at:SourceLocation}| {kind:'integer';value:number;at:SourceLocation}|{kind:'variable';name:string;at:SourceLocation}|{kind:'read';pin:Expression;at:SourceLocation};
 export type Statement =
  | {kind:'servo-attach';pin:Expression;at:SourceLocation}
  | {kind:'servo-write';angle:Expression;at:SourceLocation}
@@ -16,10 +16,11 @@ export type Statement =
  | {kind:'pinMode';pin:Expression;mode:'OUTPUT'|'INPUT_PULLUP'|'INPUT';at:SourceLocation}
  | {kind:'pwm';pin:Expression;duty:Expression;at:SourceLocation}
  | {kind:'write';pin:Expression;level:'HIGH'|'LOW'|Expression;at:SourceLocation}
+ | {kind:'microdelay';duration:Expression;at:SourceLocation}
  | {kind:'delay';duration:Expression;at:SourceLocation}
  | {kind:'if';left:Expression;right:Expression;operator:'=='|'!='|'>'|'<'|'>='|'<=';then:Statement[];otherwise:Statement[];at:SourceLocation};
 export interface Program { lessonId:LessonId;servoName?:string;globals:Extract<Statement,{kind:'declare'}>[];setup:Statement[];loop:Statement[];loopAt:SourceLocation }
-const reserved=new Set(['Servo','analogRead','analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
+const reserved=new Set(['pulseIn','delayMicroseconds','Servo','analogRead','analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
 function tokenize(source:string):Token[] {
   if(source.length>limits.source)throw new ProgramError(`程式最多 ${limits.source} 個字元。`,{line:1,column:1});
   if(source.split('\n').length>limits.lines)throw new ProgramError(`程式最多 ${limits.lines} 行。`,{line:limits.lines+1,column:1});
@@ -58,7 +59,8 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
       return {kind:'integer',value,at:token};
     }
     if(!negative&&allowConstants&&(token.text==='HIGH'||token.text==='LOW')){take();return {kind:'integer',value:token.text==='HIGH'?1:0,at:token};}
-    if(!negative&&allowRead&&hasButton(lessonId)&&token.text==='digitalRead'){take();expect('(');const pin=expression();expect(')');return {kind:'read',pin,at:token};}
+    if(!negative&&allowRead&&hasDigitalRead(lessonId)&&token.text==='digitalRead'){take();expect('(');const pin=expression();expect(')');return {kind:'read',pin,at:token};}
+    if(!negative&&allowRead&&lessonId==='ultrasonic-alert'&&token.text==='pulseIn'){take();expect('(');const pin=expression();expect(',');expect('HIGH');expect(',');const timeout=expression();expect(')');return {kind:'pulse',pin,timeout,at:token};}
     if(!negative&&allowRead&&hasADC(lessonId)&&token.text==='analogRead'){take();expect('(');const pin=expression();expect(')');return {kind:'analog',pin,at:token};}
     if(!negative&&advanced&&allowRead&&token.text==='millis'){take();expect('(');expect(')');return {kind:'millis',at:token};}
     if(!negative&&token.kind==='name'&&!reserved.has(token.text)){take();return {kind:'variable',name:token.text,at:token};}
@@ -66,7 +68,7 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
   };
   const expression=(allowRead=false,allowConstants=false):Expression=>{
     let terms=1;const limit=(at:SourceLocation)=>{if(++terms>32)throw new ProgramError('每個算式最多 32 項。',at);};
-    const term=():Expression=>{let left=atom(allowRead,allowConstants);while(lessonId==='pot-dimming'&&peek().text==='/'){const op=take();limit(op);left={kind:'binary',left,right:atom(allowRead,allowConstants),operator:'/',at:op};}return left;};
+    const term=():Expression=>{let left=atom(allowRead,allowConstants);while((lessonId==='pot-dimming'||lessonId==='ultrasonic-alert')&&peek().text==='/'){const op=take();limit(op);left={kind:'binary',left,right:atom(allowRead,allowConstants),operator:'/',at:op};}return left;};
     let left=term();while(advanced&&(peek().text==='+'||peek().text==='-')){const op=take();limit(op);left={kind:'binary',left,right:term(),operator:op.text as '+'|'-',at:op};}return left;
   };
   const declaration=(allowRead=false):Extract<Statement,{kind:'declare'}>=>{
@@ -90,15 +92,16 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
       const then=branch();let otherwise:Statement[]=[];if(peek().text==='else'){take();otherwise=branch();}return {kind:'if',left,right,operator:operator.text as Extract<Statement,{kind:'if'}>['operator'],then,otherwise,at};
     }
     if(advanced&&at.kind==='name'&&!reserved.has(at.text)&&peek().text==='='){take();const value=expression(true,true);expect(';');return {kind:'assign',name:at.text,value,at};}
-    if(![...(lessonId==='servo-angle'?[]:['pinMode','digitalWrite']),'delay',...(hasPWM(lessonId)?['analogWrite']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
+    if(![...(lessonId==='servo-angle'?[]:['pinMode','digitalWrite']),'delay',...(hasPWM(lessonId)?['analogWrite']:[]),...(lessonId==='ultrasonic-alert'?['delayMicroseconds']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
     expect('(');const value=expression(advanced,advanced);
+    if(at.text==='delayMicroseconds'){expect(')');expect(';');return {kind:'microdelay',duration:value,at};}
     if(at.text==='delay'){expect(')');expect(';');return {kind:'delay',duration:value,at};}
     expect(',');
     if(at.text==='analogWrite'){const duty=expression(true,true);expect(')');expect(';');return {kind:'pwm',pin:value,duty,at};}
     if(at.text==='digitalWrite'&&advanced){const level=expression(true,true);expect(')');expect(';');return {kind:'write',pin:value,level,at};}
     const constant=take();
     if(at.text==='pinMode'){
-      if(constant.text!=='OUTPUT'&&!(hasButton(lessonId)&&constant.text==='INPUT_PULLUP')&&!(hasADC(lessonId)&&constant.text==='INPUT'))throw new ProgramError(hasADC(lessonId)?'pinMode 只支援 GPIO34 INPUT 與 GPIO23 OUTPUT。':hasButton(lessonId)?'pinMode 只支援 GPIO23 OUTPUT 與 GPIO18 INPUT_PULLUP。':'pinMode 目前只支援 OUTPUT。',constant);
+      if(constant.text!=='OUTPUT'&&!(hasButton(lessonId)&&constant.text==='INPUT_PULLUP')&&!(hasInputMode(lessonId)&&constant.text==='INPUT'))throw new ProgramError(lessonId==='pir-delay'?'pinMode 只支援 GPIO27 INPUT 與 GPIO23 OUTPUT。':lessonId==='ultrasonic-alert'?'pinMode 只支援 GPIO34 INPUT、GPIO22／23 OUTPUT。':hasADC(lessonId)?'pinMode 只支援 GPIO34 INPUT 與 GPIO23 OUTPUT。':hasButton(lessonId)?'pinMode 只支援 GPIO23 OUTPUT 與 GPIO18 INPUT_PULLUP。':'pinMode 目前只支援 OUTPUT。',constant);
       expect(')');expect(';');return {kind:'pinMode',pin:value,mode:constant.text as 'OUTPUT'|'INPUT_PULLUP'|'INPUT',at};
     }
     if(constant.text!=='HIGH'&&constant.text!=='LOW')throw new ProgramError('digitalWrite 的第二個參數只支援 HIGH 或 LOW。',constant);

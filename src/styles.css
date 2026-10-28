@@ -92,3 +92,5 @@
 .rgb-swatch{height:96px;border:1px solid var(--border);border-radius:10px;margin:12px 0}.rgb-channel{border-top:1px solid var(--border);padding:12px 0}.rgb-channel strong{font-size:16px}.rgb-channel label{display:grid;gap:8px;font-size:15px}.rgb-channel input{width:100%;min-height:44px}
 
 .servo-gauge{height:100px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:10px;margin:12px 0}.servo-gauge i{display:block;width:70px;height:8px;border-radius:6px;background:var(--accent,#3563e9);transform-origin:8px 4px}
+
+.sensor-toggle{display:flex;align-items:center;gap:10px;font-size:16px;line-height:1.8;margin:16px 0}.sensor-toggle input{width:20px;height:20px;flex-shrink:0}
