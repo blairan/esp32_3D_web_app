@@ -1,4 +1,4 @@
-export type LessonId='blink'|'button-led'|'dual-led'|'traffic-light'|'button-toggle'|'button-counter';
+export type LessonId='blink'|'button-led'|'dual-led'|'traffic-light'|'button-toggle'|'button-counter'|'buzzer-doorbell'|'pwm-breathing';
 const ledParts={'resistor:a':'電阻 A 端','resistor:b':'電阻 B 端','led:a':'LED 正極 A+','led:k':'LED 負極 K−'};
 export const lessons={
  blink:{id:'blink',title:'LED 閃爍',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:null,inputPin:null,parts:ledParts},
@@ -7,8 +7,12 @@ export const lessons={
  'traffic-light':{id:'traffic-light',title:'紅黃綠交通號誌',source:'J3-02',outputGPIO:23,outputGPIOs:[23,22,21],inputGPIO:null,inputPin:null,parts:{...ledParts,'led:a':'紅燈 正極 A+','led:k':'紅燈 負極 K−','resistor2:a':'黃燈電阻 A 端','resistor2:b':'黃燈電阻 B 端','led2:a':'黃燈 正極 A+','led2:k':'黃燈 負極 K−','resistor3:a':'綠燈電阻 A 端','resistor3:b':'綠燈電阻 B 端','led3:a':'綠燈 正極 A+','led3:k':'綠燈 負極 K−'}},
  'button-toggle':{id:'button-toggle',title:'按一次切換 LED',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:18,inputPin:'J3-09',parts:{...ledParts,'button:a1':'按鈕 A1','button:a2':'按鈕 A2','button:b1':'按鈕 B1','button:b2':'按鈕 B2'}},
  'button-counter':{id:'button-counter',title:'按鈕計數器',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:18,inputPin:'J3-09',parts:{...ledParts,'button:a1':'按鈕 A1','button:a2':'按鈕 A2','button:b1':'按鈕 B1','button:b2':'按鈕 B2'}},
+ 'buzzer-doorbell':{id:'buzzer-doorbell',title:'主動式蜂鳴器門鈴',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:18,inputPin:'J3-09',parts:{'buzzer:s':'蜂鳴器 S 訊號','buzzer:vcc':'蜂鳴器 VCC','buzzer:gnd':'蜂鳴器 GND','button:a1':'按鈕 A1','button:a2':'按鈕 A2','button:b1':'按鈕 B1','button:b2':'按鈕 B2'}},
+ 'pwm-breathing':{id:'pwm-breathing',title:'PWM 呼吸燈',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:null,inputPin:null,parts:ledParts},
 } satisfies Record<LessonId,{id:LessonId;title:string;source:string;outputGPIO:number;outputGPIOs:number[];inputGPIO:number|null;inputPin:string|null;parts:Record<string,string>}>;
-export function readLesson(value:string|null):LessonId{return value==='button-led'||value==='dual-led'||value==='traffic-light'||value==='button-toggle'||value==='button-counter'?value:'blink';}
+export function readLesson(value:string|null):LessonId{return value==='button-led'||value==='dual-led'||value==='traffic-light'||value==='button-toggle'||value==='button-counter'||value==='buzzer-doorbell'||value==='pwm-breathing'?value:'blink';}
 
 export function hasButton(id:LessonId){return lessons[id].inputGPIO!==null;}
 export function hasStatefulButton(id:LessonId){return id==='button-toggle'||id==='button-counter';}
+
+export function hasExtendedSyntax(id:LessonId){return hasStatefulButton(id)||id==='pwm-breathing';}

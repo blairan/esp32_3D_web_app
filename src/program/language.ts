@@ -1,4 +1,4 @@
-import {hasButton,hasStatefulButton,type LessonId} from '../lessons.ts';
+import {hasButton,hasExtendedSyntax,type LessonId} from '../lessons.ts';
 export interface SourceLocation { line:number; column:number }
 export interface ProgramDiagnostic extends SourceLocation { message:string }
 export class ProgramError extends Error {
@@ -12,11 +12,12 @@ export type Statement =
  | {kind:'assign';name:string;value:Expression;at:SourceLocation}
  | {kind:'declare';name:string;value:Expression;at:SourceLocation}
  | {kind:'pinMode';pin:Expression;mode:'OUTPUT'|'INPUT_PULLUP';at:SourceLocation}
+ | {kind:'pwm';pin:Expression;duty:Expression;at:SourceLocation}
  | {kind:'write';pin:Expression;level:'HIGH'|'LOW'|Expression;at:SourceLocation}
  | {kind:'delay';duration:Expression;at:SourceLocation}
  | {kind:'if';left:Expression;right:Expression;operator:'=='|'!='|'>'|'<'|'>='|'<=';then:Statement[];otherwise:Statement[];at:SourceLocation};
 export interface Program { lessonId:LessonId;globals:Extract<Statement,{kind:'declare'}>[];setup:Statement[];loop:Statement[];loopAt:SourceLocation }
-const reserved=new Set(['millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
+const reserved=new Set(['analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
 function tokenize(source:string):Token[] {
   if(source.length>limits.source)throw new ProgramError(`程式最多 ${limits.source} 個字元。`,{line:1,column:1});
   if(source.split('\n').length>limits.lines)throw new ProgramError(`程式最多 ${limits.lines} 行。`,{line:limits.lines+1,column:1});
@@ -43,7 +44,7 @@ function tokenize(source:string):Token[] {
   tokens.push({text:'',kind:'end',line,column});return tokens;
 }
 export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
-  const advanced=hasStatefulButton(lessonId);
+  const advanced=hasExtendedSyntax(lessonId);
   const tokens=tokenize(source);let index=0,count=0;
   const peek=()=>tokens[index];const take=()=>tokens[index++];
   const expect=(text:string)=>{const token=take();if(token.text!==text)throw new ProgramError(`預期「${text}」${token.kind==='end'?'，但程式已結束。':`，目前是「${token.text}」。`}`,token);return token;};
@@ -74,7 +75,7 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
     if(peek().text==='int')return declaration(true);
     const at=take();
     if(at.text==='if'){
-      if(!hasButton(lessonId))throw new ProgramError('此專題不支援 if；請切換按鈕控制 LED。',at);
+      if(!hasButton(lessonId)&&!advanced)throw new ProgramError('此專題不支援 if；請切換按鈕控制 LED。',at);
       if((!advanced&&depth>0)||depth>=4)throw new ProgramError(advanced?'if 最多四層；不支援 else if。':'本課不支援巢狀 if 或 else if。',at);
       expect('(');const left=expression(true,true),operator=take();if(!(advanced?['==','!=','>','<','>=','<=']:['==','!=']).includes(operator.text))throw new ProgramError(advanced?'條件只支援單一 == != > < >= <= 比較。':'條件只支援單一 == 或 != 比較。',operator);
       const right=expression(true,true);expect(')');
@@ -82,10 +83,11 @@ export function parseProgram(source:string,lessonId:LessonId='blink'):Program {
       const then=branch();let otherwise:Statement[]=[];if(peek().text==='else'){take();otherwise=branch();}return {kind:'if',left,right,operator:operator.text as Extract<Statement,{kind:'if'}>['operator'],then,otherwise,at};
     }
     if(advanced&&at.kind==='name'&&!reserved.has(at.text)&&peek().text==='='){take();const value=expression(true,true);expect(';');return {kind:'assign',name:at.text,value,at};}
-    if(!['pinMode','digitalWrite','delay'].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
+    if(!['pinMode','digitalWrite','delay',...(lessonId==='pwm-breathing'?['analogWrite']:[])].includes(at.text))throw new ProgramError(`不支援「${at.text||'程式結尾'}」；本課僅接受 int 宣告、pinMode、digitalWrite、delay。`,at);
     expect('(');const value=expression(advanced,advanced);
     if(at.text==='delay'){expect(')');expect(';');return {kind:'delay',duration:value,at};}
     expect(',');
+    if(at.text==='analogWrite'){const duty=expression(true,true);expect(')');expect(';');return {kind:'pwm',pin:value,duty,at};}
     if(at.text==='digitalWrite'&&advanced){const level=expression(true,true);expect(')');expect(';');return {kind:'write',pin:value,level,at};}
     const constant=take();
     if(at.text==='pinMode'){

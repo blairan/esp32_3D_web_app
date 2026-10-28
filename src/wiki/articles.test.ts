@@ -1,8 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {articles,articleById,topicArticles} from './articles.ts';
-test('all fourteen topics, related articles and entry mappings resolve without duplicate IDs',()=>{
- assert.equal(articles.length,14);assert.equal(articleById.size,14);
+test('all sixteen topics, related articles and entry mappings resolve without duplicate IDs',()=>{
+ assert.equal(articles.length,16);assert.equal(articleById.size,16);
  for(const id of Object.values(topicArticles))assert.ok(articleById.has(id),id);
  for(const article of articles)for(const id of article.related){assert.ok(articleById.has(id),id);assert.notEqual(id,article.id);}
 });

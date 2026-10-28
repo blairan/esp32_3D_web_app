@@ -1,3 +1,4 @@
+import LoadLessonPanel from './LoadLessonPanel';
 import {buttonExercise} from '../buttonExercises';
 import DualLessonPanel from './DualLessonPanel';
 import ButtonControl,{type ButtonControlProps} from './ButtonControl';
@@ -8,6 +9,7 @@ import type { CircuitAction, CircuitAnalysis, CircuitState } from '../circuit';
 interface Props {buttonControl?:ButtonControlProps;state:CircuitState;analysis:CircuitAnalysis;dispatch:(action:CircuitAction)=>void}
 export default function LessonPanel({buttonControl,state,analysis,dispatch}:Props) {
   const openWiki=useWiki();const exercise=buttonExercise(state.lessonId);
+  if(state.lessonId==='buzzer-doorbell'||state.lessonId==='pwm-breathing')return <LoadLessonPanel state={state} analysis={analysis} dispatch={dispatch} buttonControl={buttonControl}/>;
   if((state.lessonId==='dual-led'||state.lessonId==='traffic-light'))return <DualLessonPanel state={state} analysis={analysis} dispatch={dispatch}/>;
   return <aside className="inspector lesson-inspector" aria-label="LED 教學與輸出控制">
     <p className="lesson-index"><span>{exercise?.number??(buttonControl?'02':'01')}</span> / {exercise?exercise.title:buttonControl?'按鈕控制 LED':'外接 LED'}</p>

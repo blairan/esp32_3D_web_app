@@ -9,6 +9,7 @@ export const partPositions: Record<string, [number, number, number]> = {
   'led:a': [49, -1, 2], 'led:k': [59, -1, 2],
   'resistor2:a':[24.5,-16,2],'resistor2:b':[39.5,-16,2],'led2:a':[49,-25,2],'led2:k':[59,-25,2],
   'resistor3:a':[24.5,-40,2],'resistor3:b':[39.5,-40,2],'led3:a':[49,-49,2],'led3:k':[59,-49,2],
+  'buzzer:s':[27,4,2],'buzzer:vcc':[35.5,4,2],'buzzer:gnd':[44,4,2],
   'button:a1':[27,-7,2],'button:a2':[27,-16,2],'button:b1':[44,-7,2],'button:b2':[44,-16,2],
 };
 export function terminalPosition(id: string): THREE.Vector3 | null {
@@ -43,7 +44,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);mesh.position.set(x,y,1);group.add(mesh);
   }
   const ledVisuals:{material:THREE.MeshPhysicalMaterial;halo:THREE.Mesh;baseColor:number}[]=[];
-  for(let index=0;index<(lessonId==='traffic-light'?3:lessonId==='dual-led'?2:1);index++){
+  for(let index=0;index<(lessonId==='buzzer-doorbell'?0:lessonId==='traffic-light'?3:lessonId==='dual-led'?2:1);index++){
     const offset=-24*index,baseColor=lessonId==='traffic-light'?[0xb81d32,0xe6ad15,0x249a51][index]:index?0x2864d5:0xb81d32;
     const ledMaterial=index?red.clone():red;if(index){ledMaterial.color.set(baseColor);materials.push(ledMaterial);}
     const resistorBody=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistorBody.rotation.z=Math.PI/2;resistorBody.position.set(32,8+offset,2);group.add(resistorBody);
@@ -63,6 +64,14 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   const haloMaterial=new THREE.MeshBasicMaterial({color:baseColor,transparent:true,opacity:.14,depthWrite:false});materials.push(haloMaterial);
   const halo=new THREE.Mesh(new THREE.CircleGeometry(5.5,36),haloMaterial);halo.position.set(54,7+offset,0);group.add(halo);halo.visible=false;
     ledVisuals.push({material:ledMaterial,halo,baseColor});
+  }
+  let buzzerRing:THREE.Mesh|null=null;
+  if(lessonId==='buzzer-doorbell'){
+   const bodyMaterial=new THREE.MeshStandardMaterial({color:0x26303e,roughness:.5});materials.push(bodyMaterial);
+   cylinder(6.5,5,35.5,15,3.5,bodyMaterial);
+   const opening=new THREE.Mesh(new THREE.CircleGeometry(2,24),bodyMaterial);opening.position.set(35.5,15,6.2);group.add(opening);
+   const ringMaterial=new THREE.MeshBasicMaterial({color:0x4388ff,transparent:true,opacity:.7});materials.push(ringMaterial);buzzerRing=new THREE.Mesh(new THREE.TorusGeometry(8,.5,8,40),ringMaterial);buzzerRing.position.set(35.5,15,4);buzzerRing.visible=false;group.add(buzzerRing);
+   text('ACTIVE BUZZER',35.5,26,24,3);text('S',27,1,4);text('VCC',35.5,1,7);text('GND',44,1,7);
   }
   let buttonCap:THREE.Mesh|null=null;
   if(hasButton(lessonId)){
@@ -109,7 +118,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     },
     needsAnimation(){return enabled&&(lit||lit2||lit3)&&playing&&!reducedMotion&&!simple&&flowItems.some(item=>item.active);},
     animate(delta:number){if(this.needsAnimation()){phase=(phase+delta*.45)%1;positionFlow();}},
-    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false){
+    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1){
       if(wires!==previousWires){
         clearWires();previousWires=wires;
         wires.forEach((wire,index)=>{
@@ -120,16 +129,18 @@ export function createCircuitScene(lessonId:LessonId='blink') {
           const material=new THREE.MeshStandardMaterial({color:wireColor(wire),roughness:.32});
           const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,32,.3,8,false),material);group.add(mesh);wireMeshes.push(mesh);addFlow('wire:'+wire.id,curve,wire.from);
         });
-        for(let index=0;index<(lessonId==='traffic-light'?3:lessonId==='dual-led'?2:1);index++){
+        for(let index=0;index<(lessonId==='buzzer-doorbell'?0:lessonId==='traffic-light'?3:lessonId==='dual-led'?2:1);index++){
           const offset=-24*index,r=index?'resistor'+(index+1):'resistor',l=index?'led'+(index+1):'led';
           addFlow('resistor:'+r,new THREE.CatmullRomCurve3([new THREE.Vector3(24.5,8+offset,2),new THREE.Vector3(32,8+offset,4),new THREE.Vector3(39.5,8+offset,2)]),r+':a');
           addFlow('led:'+l,new THREE.CatmullRomCurve3([new THREE.Vector3(49,-1+offset,2),new THREE.Vector3(52.4,5+offset,2),new THREE.Vector3(54,7+offset,5),new THREE.Vector3(55.5,5+offset,2),new THREE.Vector3(59,-1+offset,2)]),l+':a');
         }
       }
+      if(buzzerRing)buzzerRing.visible=nextLit;
+      if(lessonId==='pwm-breathing'){particleMaterial.opacity=brightness;arrowMaterial.transparent=true;arrowMaterial.opacity=brightness;}
       if(buttonCap)buttonCap.position.z=pressed?2:3.3;
       lit=nextLit;lit2=nextLit2;lit3=nextLit3;const path=new Map(currentPath(wires,lit?'HIGH':'LOW',lessonId,lit2?'HIGH':'LOW',lit3?'HIGH':'LOW').map(segment=>[segment.kind+':'+segment.id,segment]));
       for(const item of flowItems){const segment=path.get(item.key);item.active=Boolean(segment);item.forward=segment?.from===item.from;}
-      ledVisuals.forEach((visual,index)=>{const on=[lit,lit2,lit3][index];visual.material.color.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x4388ff:0xe83942):visual.baseColor);visual.material.emissive.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x164edd:0xdc101c):0x000000);visual.material.emissiveIntensity=on ? .8 : 0;visual.halo.visible=on;});positionFlow();
+      ledVisuals.forEach((visual,index)=>{const on=[lit,lit2,lit3][index];visual.material.color.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x4388ff:0xe83942):visual.baseColor);visual.material.emissive.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x164edd:0xdc101c):0x000000);if(lessonId==='pwm-breathing')visual.material.color.multiplyScalar(.35+.65*brightness);visual.material.emissiveIntensity=on ? .8*(index===0?brightness:1) : 0;(visual.halo.material as THREE.MeshBasicMaterial).opacity=.14*(index===0?brightness:1);visual.halo.visible=on;});positionFlow();
       const position=pending?terminalPosition(pending):null;pendingRing.visible=Boolean(position);if(position)pendingRing.position.copy(position).add(new THREE.Vector3(0,0,1.5));
     },
     dispose(){

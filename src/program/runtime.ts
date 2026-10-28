@@ -3,8 +3,8 @@ import { pins } from '../board.ts';
 import { limits, ProgramError } from './language.ts';
 import type { Program, Statement, Expression, SourceLocation, ProgramDiagnostic } from './language.ts';
 export type InputLevel='HIGH'|'LOW'|null;
-export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';line:number}
-export interface ProgramSnapshot {variables:Record<string,number>;outputs:Record<number,{enabled:boolean;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
+export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';duty?:number;line:number}
+export interface ProgramSnapshot {variables:Record<string,number>;outputs:Record<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
 export type RunStatus='idle'|'starting'|'running'|'paused'|'stopped'|'error';
 export interface ProgramState extends ProgramSnapshot {status:RunStatus;diagnostic:ProgramDiagnostic|null}
 export const initialProgramState:ProgramState={variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
@@ -13,7 +13,7 @@ interface Frame {body:Statement[];pc:number;locals:Map<string,number>}
 export class ProgramRuntime {
  private program:Program;private globals=new Map<string,number>();private frames:Frame[]=[];
  private phase:'setup'|'loop'='setup';private time=0;private waitingUntil:number|null=null;private loopStart=0;
- private outputs=new Map<number,{enabled:boolean;level:'HIGH'|'LOW'}>();
+ private outputs=new Map<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>();
  private outputEnabled=false;private inputEnabled=false;private input:InputLevel='HIGH';private lastRead:InputLevel=null;
  private level:'HIGH'|'LOW'='LOW';private line=0;private loopCount=0;private operations=0;private trace:TraceEntry[]=[];
  constructor(program:Program,input:InputLevel='HIGH'){this.program=program;this.input=input;for(const statement of program.globals)this.declareVariable(statement,this.globals);this.frames=[this.frame(program.setup)];}
@@ -69,6 +69,11 @@ export class ProgramRuntime {
     case 'assign':{let scope:Map<string,number>|undefined;for(let i=this.frames.length-1;i>=0;i--)if(this.frames[i].locals.has(statement.name)){scope=this.frames[i].locals;break;}scope??=this.globals.has(statement.name)?this.globals:undefined;if(!scope)throw new ProgramError(`未知變數「${statement.name}」，請先用 int 宣告。`,statement.at);scope.set(statement.name,this.value(statement.value));break;}
     case 'declare':this.declareVariable(statement,frame.locals);break;
     case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode==='INPUT_PULLUP'?'input':'output');if(statement.mode==='INPUT_PULLUP')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===23)this.outputEnabled=true;}break;}
+    case 'pwm':{
+     const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError('請先執行 pinMode(23, OUTPUT)，才能 analogWrite。',statement.at);
+     const duty=this.value(statement.duty);if(duty<0||duty>255)throw new ProgramError('analogWrite 佔空比只接受 0 到 255 的整數。',statement.at);
+     const level=duty>0?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level,duty});this.level=level;this.trace.push({gpio,timeMs:this.time,level,duty,line:this.line});this.trace=this.trace.slice(-8);break;
+    }
     case 'write':{
      const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 digitalWrite。`,statement.at);
      const value=typeof statement.level==='string'?statement.level==='HIGH'?1:0:this.value(statement.level);if(value!==0&&value!==1)throw new ProgramError('digitalWrite 電位只接受 HIGH／LOW 或值為 0／1 的整數。',statement.at);const level=value===1?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level});if(gpio===23)this.level=level;this.trace.push({gpio,timeMs:this.time,level,line:this.line});this.trace=this.trace.slice(-8);break;}

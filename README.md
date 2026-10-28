@@ -37,7 +37,7 @@ npm run preview
 
 ## 驗證狀態
 
-72 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+102 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -65,6 +65,8 @@ npm run preview
 
 右上「學習專題」新增第三課，網址 `?lesson=dual-led#code`。GPIO23 對應 LED 1、GPIO22 對應 LED 2，各使用一顆 220 Ω 電阻，支援六條範例接線、獨立手動輸出／診斷／電流，以及程式交替控制。預設仍為空架構，可查看第三課標準答案；Wiki 共十篇。詳見 [雙 LED 課程與驗證](docs/dual-led-lesson.md)。
 
-第四課：[紅黃綠交通號誌](https://blairan.github.io/esp32_3D_web_app/?lesson=traffic-light#code)（紅 GPIO23、黃 GPIO22、綠 GPIO21）。九線範例、三輸出、3／3／1 秒時序、練習架構、主動展開標準答案與第 11 篇 Wiki。詳見 [課程契約與驗證](docs/traffic-light-lesson.md)。目前資料與執行測試共 82 項。
+第四課：[紅黃綠交通號誌](https://blairan.github.io/esp32_3D_web_app/?lesson=traffic-light#code)（紅 GPIO23、黃 GPIO22、綠 GPIO21）。九線範例、三輸出、3／3／1 秒時序、練習架構、主動展開標準答案與第 11 篇 Wiki。詳見 [課程契約與驗證](docs/traffic-light-lesson.md)。該課完成時資料與執行測試共 82 項。
 
 第五課：[按一次切換 LED](https://blairan.github.io/esp32_3D_web_app/?lesson=button-toggle#code)；第六課：[按鈕計數器](https://blairan.github.io/esp32_3D_web_app/?lesson=button-counter#code)。加入 50ms 穩定判斷、下降邊緣、全域變數觀察區，以及僅兩課開放的 millis／整數狀態語法。初始仍為練習架構；目前 92 項測試與 14 篇 Wiki，詳見 [課程契約與驗證](docs/stateful-button-lessons.md)。
+
+第七課：[主動式蜂鳴器門鈴](https://blairan.github.io/esp32_3D_web_app/?lesson=buzzer-doorbell#code)；第八課：[PWM 呼吸燈](https://blairan.github.io/esp32_3D_web_app/?lesson=pwm-breathing#code)。前者採訊號／供電分離的三腳模組，示意音預設關閉；後者限定 analogWrite(23, 0～255)，提供平均亮度與手動滑桿。最新共 102 項測試、16 篇 Wiki；詳見 [教學契約與驗證](docs/buzzer-pwm-lessons.md)。

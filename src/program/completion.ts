@@ -16,6 +16,7 @@ export function declaredVariables(before:string):string[]{
  return [...new Set(scopes.flat())];
 }
 export function suggestionsFor(lessonId:LessonId):Suggestion[]{
+ if(lessonId==='pwm-breathing')return [...lessonSuggestions,{label:'analogWrite',detail:'analogWrite(23, duty) · 8 位元 PWM，0～255，預設 1000 Hz',template:'analogWrite(${1:23}, ${2:128});',type:'function'},{label:'if',detail:'最多四層 if／else，單一整數比較',template:'if (${1:brightness} >= ${2:255}) {\n  ${3}\n}',type:'keyword'},{label:'millis',detail:'目前虛擬毫秒',template:'millis()',type:'function'}];
  if(hasStatefulButton(lessonId))return [...suggestionsFor('button-led').map(item=>item.label==='if'?{...item,detail:'單一比較 == != > < >= <=；最多四層 if'}:item.label==='digitalWrite'?{...item,detail:'digitalWrite(pin, HIGH/LOW 或 0／1 變數)'}:item),{label:'millis',detail:'millis() · 取得目前虛擬毫秒，暫停時不增加',template:'millis()',type:'function'}];
  if(lessonId==='traffic-light')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 紅 GPIO23／黃 GPIO22／綠 GPIO21'}:item);
  if(lessonId==='dual-led')return lessonSuggestions.map(item=>item.label==='pinMode'||item.label==='digitalWrite'?{...item,detail:item.detail+' · 可用 GPIO23／GPIO22'}:item);
@@ -25,7 +26,7 @@ export function suggestionsFor(lessonId:LessonId):Suggestion[]{
  {label:'INPUT_PULLUP',detail:'內建上拉輸入，按下為 LOW',template:'INPUT_PULLUP',type:'constant'},
  {label:'if',detail:'if (比較) { … } else { … } · 單一條件分支',template:'if (${1:buttonState} == ${2:LOW}) {\n  ${3}\n} else {\n  ${4}\n}',type:'keyword'}];
 }
-export function scaffoldFor(lessonId:LessonId){return hasStatefulButton(lessonId)?`// 在函式外宣告需要保留的整數狀態\nvoid setup() {\n  // 設定 LED 輸出與按鈕上拉\n}\n\nvoid loop() {\n  // 讀取按鈕、檢查穩定時間，再更新狀態\n  // 安排正值等待\n}\n`:lessonId==='traffic-light'?programScaffold:lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
+export function scaffoldFor(lessonId:LessonId){return lessonId==='pwm-breathing'?`// 在函式外宣告亮度與步長\nvoid setup() {\n  // 設定 GPIO23 輸出\n}\n\nvoid loop() {\n  // 輸出 PWM、更新亮度、處理端點並等待\n}\n`:hasStatefulButton(lessonId)?`// 在函式外宣告需要保留的整數狀態\nvoid setup() {\n  // 設定 LED 輸出與按鈕上拉\n}\n\nvoid loop() {\n  // 讀取按鈕、檢查穩定時間，再更新狀態\n  // 安排正值等待\n}\n`:lessonId==='traffic-light'?programScaffold:lessonId==='dual-led'?dualScaffold:lessonId==='blink'?programScaffold:buttonScaffold;}
 const buttonScaffold=`void setup() {
   // 設定 LED 輸出與按鈕內建上拉
 }

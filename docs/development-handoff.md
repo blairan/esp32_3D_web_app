@@ -146,3 +146,11 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - 僅新兩課擴充 millis、受限賦值與整數加減、比較和四層 if；舊課維持限制。
 - 92 項測試、建置及正式產物瀏覽器檢查通過，詳細教學契約與限制見 [stateful-button-lessons.md](stateful-button-lessons.md)。
 - 下一步：使用者試用兩課；第七課主動式蜂鳴器尚未開始。
+
+### 2026-10-28：第七、八課完成
+
+- `?lesson=buzzer-doorbell#code`：三腳主動式蜂鳴器模組、GPIO18 按鈕門鈴，訊號／供電分離，預設靜音且可自行開啟示意音。
+- `?lesson=pwm-breathing#code`：GPIO23、0～255 analogWrite、平均亮度、手動滑桿與呼吸練習。
+- 兩課都有架構、補全、Wiki、可展開答案及接線範例切換。Wiki 共 16 篇，測試共 102 項。
+- 詳細契約、瀏覽器驗證與實物限制見 [buzzer-pwm-lessons.md](buzzer-pwm-lessons.md)。
+- 下一個最小步驟：使用者試用兩課；第九課 RGB 混色尚未開始。

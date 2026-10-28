@@ -1,0 +1,2 @@
+import type {LessonId} from './lessons';
+export function loadExercise(id:LessonId){return id==='buzzer-doorbell'?{number:'07',title:'按下門鈴，讓聲音回應。',goal:'GPIO18 內建上拉讀取按鈕；按下時 GPIO23 HIGH 讓主動式模組發聲，放開 LOW 安靜。',hint:'模組需 VCC、GND 和 S 三條線。按下讀為 LOW；固定音調由模組內部產生，不使用 tone。',topic:'buzzer-doorbell' as const}:id==='pwm-breathing'?{number:'08',title:'讓亮度，慢慢呼吸。',goal:'以 analogWrite(23, duty) 在 0～255 間漸亮再漸暗，控制更新步長與等待時間。',hint:'用全域變數保存亮度和步長；接近端點時改變步長方向，確保每次輸出皆在 0～255。',topic:'pwm-breathing' as const}:null;}
