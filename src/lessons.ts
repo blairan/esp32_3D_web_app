@@ -1,4 +1,4 @@
-export type LessonId='blink'|'button-led'|'dual-led'|'traffic-light'|'button-toggle'|'button-counter'|'buzzer-doorbell'|'pwm-breathing'|'rgb-mixing'|'pot-dimming'|'ldr-nightlight'|'servo-angle'|'ultrasonic-alert'|'pir-delay';
+export type LessonId='blink'|'button-led'|'dual-led'|'traffic-light'|'button-toggle'|'button-counter'|'buzzer-doorbell'|'pwm-breathing'|'rgb-mixing'|'pot-dimming'|'ldr-nightlight'|'servo-angle'|'ultrasonic-alert'|'pir-delay'|'climate-dht'|'oled-i2c';
 const ledParts={'resistor:a':'電阻 A 端','resistor:b':'電阻 B 端','led:a':'LED 正極 A+','led:k':'LED 負極 K−'};
 export const lessons={
  blink:{id:'blink',title:'LED 閃爍',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:null,inputPin:null,parts:ledParts},
@@ -15,13 +15,15 @@ export const lessons={
  'servo-angle':{id:'servo-angle',title:'伺服馬達角度控制',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:null,inputPin:null,parts:{'servo:s':'伺服 SIG 訊號','servo:vcc':'伺服 VCC','servo:gnd':'伺服 GND','supply:plus':'外部 5V 正極','supply:minus':'外部電源 GND'}},
  'ultrasonic-alert':{id:'ultrasonic-alert',title:'超音波測距警示',source:'J3-02',outputGPIO:23,outputGPIOs:[23,22],inputGPIO:34,inputPin:'J2-05',parts:{...ledParts,'ultra:vcc':'超音波 VCC','ultra:gnd':'超音波 GND','ultra:trig':'超音波 TRIG','ultra:echo':'超音波 ECHO（5V）','echo1:a':'1 kΩ 電阻 A','echo1:b':'1 kΩ 電阻 B','echo2:a':'2 kΩ 電阻 A','echo2:b':'2 kΩ 電阻 B','supply:plus':'外部 5V 正極','supply:minus':'外部電源 GND'}},
  'pir-delay':{id:'pir-delay',title:'PIR 人體感測延遲燈',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:27,inputPin:'J2-11',parts:{...ledParts,'pir:vcc':'PIR VCC（5V）','pir:gnd':'PIR GND','pir:out':'PIR OUT（3.3V）','supply:plus':'外部 5V 正極','supply:minus':'外部電源 GND'}},
+ 'climate-dht':{id:'climate-dht',title:'溫溼度感測',source:'J3-02',outputGPIO:23,outputGPIOs:[23],inputGPIO:4,inputPin:'J3-13',parts:{...ledParts,'dht:vcc':'DHT22 VCC（3V3）','dht:data':'DHT22 DATA（內建上拉）','dht:gnd':'DHT22 GND'}},
+ 'oled-i2c':{id:'oled-i2c',title:'OLED 顯示（I²C）',source:'J3-06',outputGPIO:21,outputGPIOs:[21,22],inputGPIO:null,inputPin:null,parts:{'oled:vcc':'OLED VCC（3V3）','oled:gnd':'OLED GND','oled:sda':'OLED SDA','oled:scl':'OLED SCL'}},
 } satisfies Record<LessonId,{id:LessonId;title:string;source:string;outputGPIO:number;outputGPIOs:number[];inputGPIO:number|null;inputPin:string|null;parts:Record<string,string>}>;
-export function readLesson(value:string|null):LessonId{return value==='button-led'||value==='dual-led'||value==='traffic-light'||value==='button-toggle'||value==='button-counter'||value==='buzzer-doorbell'||value==='pwm-breathing'||value==='rgb-mixing'||value==='pot-dimming'||value==='ldr-nightlight'||value==='servo-angle'||value==='ultrasonic-alert'||value==='pir-delay'?value:'blink';}
+export function readLesson(value:string|null):LessonId{return value==='button-led'||value==='dual-led'||value==='traffic-light'||value==='button-toggle'||value==='button-counter'||value==='buzzer-doorbell'||value==='pwm-breathing'||value==='rgb-mixing'||value==='pot-dimming'||value==='ldr-nightlight'||value==='servo-angle'||value==='ultrasonic-alert'||value==='pir-delay'||value==='climate-dht'||value==='oled-i2c'?value:'blink';}
 
 export function hasButton(id:LessonId){return lessons[id].inputGPIO===18;}
 export function hasStatefulButton(id:LessonId){return id==='button-toggle'||id==='button-counter';}
 
-export function hasExtendedSyntax(id:LessonId){return hasStatefulButton(id)||id==='pwm-breathing'||id==='rgb-mixing'||id==='pot-dimming'||id==='ldr-nightlight'||id==='servo-angle'||id==='ultrasonic-alert'||id==='pir-delay';}
+export function hasExtendedSyntax(id:LessonId){return hasStatefulButton(id)||id==='pwm-breathing'||id==='rgb-mixing'||id==='pot-dimming'||id==='ldr-nightlight'||id==='servo-angle'||id==='ultrasonic-alert'||id==='pir-delay'||id==='climate-dht'||id==='oled-i2c';}
 
 export function hasPWM(id:LessonId){return id==='pwm-breathing'||id==='rgb-mixing'||id==='pot-dimming';}
 

@@ -1,3 +1,4 @@
+import type {OledState} from '../program/peripheralTypes';
 import {lessons,hasButton,type LessonId} from '../lessons';
 import * as THREE from 'three';
 import { pinById } from '../board';
@@ -11,6 +12,8 @@ export const partPositions: Record<string, [number, number, number]> = {
   'resistor3:a':[24.5,-40,2],'resistor3:b':[39.5,-40,2],'led3:a':[49,-49,2],'led3:k':[59,-49,2],
   'ultra:vcc':[27,-20,2],'ultra:trig':[36,-20,2],'ultra:echo':[45,-20,2],'ultra:gnd':[54,-20,2],
   'echo1:a':[26,-34,2],'echo1:b':[41,-34,2],'echo2:a':[48,-45,2],'echo2:b':[63,-45,2],
+  'dht:vcc':[28,-24,2],'dht:data':[38,-24,2],'dht:gnd':[48,-24,2],
+  'oled:vcc':[26,-22,2],'oled:gnd':[35,-22,2],'oled:sda':[44,-22,2],'oled:scl':[53,-22,2],
   'pir:vcc':[28,-18,2],'pir:out':[38,-18,2],'pir:gnd':[48,-18,2],
   'ldr:a':[26,-14,2],'ldr:b':[44,-14,2],'divider:a':[26,-32,2],'divider:b':[44,-32,2],
   'servo:s':[30,-17,2],'servo:vcc':[39,-17,2],'servo:gnd':[48,-17,2],'supply:plus':[30,18,2],'supply:minus':[46,18,2],
@@ -51,7 +54,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);mesh.position.set(x,y,1);group.add(mesh);
   }
   const ledVisuals:{material:THREE.MeshPhysicalMaterial;halo:THREE.Mesh;baseColor:number}[]=[];
-  for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
+  for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle'||lessonId==='oled-i2c')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
     const offset=-24*index,baseColor=lessonId==='traffic-light'?[0xb81d32,0xe6ad15,0x249a51][index]:index?0x2864d5:0xb81d32;
     const ledMaterial=index?red.clone():red;if(index){ledMaterial.color.set(baseColor);materials.push(ledMaterial);}
     const resistorBody=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistorBody.rotation.z=Math.PI/2;resistorBody.position.set(32,8+offset,2);group.add(resistorBody);
@@ -72,6 +75,20 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   const haloMaterial=new THREE.MeshBasicMaterial({color:baseColor,transparent:true,opacity:.14,depthWrite:false});materials.push(haloMaterial);
   const halo=new THREE.Mesh(new THREE.CircleGeometry(5.5,36),haloMaterial);halo.position.set(54,7+offset,0);group.add(halo);halo.visible=false;
     ledVisuals.push({material:ledMaterial,halo,baseColor});
+  }
+  let oledCanvas:HTMLCanvasElement|null=null,oledTexture:THREE.CanvasTexture|null=null,oledRevision=-1,oledBegun=false;
+  if(lessonId==='climate-dht'||lessonId==='oled-i2c'){
+   const oled=lessonId==='oled-i2c';const moduleMaterial=new THREE.MeshStandardMaterial({color:0x2e5686,roughness:.55});materials.push(moduleMaterial);
+   const body=new THREE.Mesh(new THREE.BoxGeometry(oled?34:22,oled?24:14,2),moduleMaterial);body.position.set(39,oled?-3:-12,1);group.add(body);
+   if(oled){
+    oledCanvas=document.createElement('canvas');oledCanvas.width=512;oledCanvas.height=256;oledTexture=new THREE.CanvasTexture(oledCanvas);oledTexture.colorSpace=THREE.SRGBColorSpace;textures.push(oledTexture);
+    const screenMaterial=new THREE.MeshBasicMaterial({map:oledTexture,toneMapped:false});materials.push(screenMaterial);const screen=new THREE.Mesh(new THREE.PlaneGeometry(29,14.5),screenMaterial);screen.position.set(39,-3,2.1);group.add(screen);
+    text('SSD1306 / 128x64',39,13,31,3);
+   }else{
+    const sensorMaterial=new THREE.MeshStandardMaterial({color:0xe3e8f1,roughness:.75});materials.push(sensorMaterial);const sensor=new THREE.Mesh(new THREE.BoxGeometry(13,12,5),sensorMaterial);sensor.position.set(39,-10,4);group.add(sensor);
+    const slitMaterial=new THREE.MeshStandardMaterial({color:0x77889e});materials.push(slitMaterial);for(let i=0;i<4;i++){const slit=new THREE.Mesh(new THREE.BoxGeometry(9,.7,.2),slitMaterial);slit.position.set(39,-14+i*2.5,6.6);group.add(slit);}text('DHT22 / 3V3',39,-1,24,2.5);
+   }
+   for(const id of oled?['oled:vcc','oled:gnd','oled:sda','oled:scl']:['dht:vcc','dht:data','dht:gnd']){const p=terminalPosition(id)!;tube([p,new THREE.Vector3(p.x,oled?-15:-19,1)],gray);text(id.split(':')[1].toUpperCase(),p.x,p.y-3,7);}
   }
   let pirDome:THREE.MeshPhysicalMaterial|null=null;
   if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay'){
@@ -158,7 +175,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     },
     needsAnimation(){return enabled&&(lit||lit2||lit3)&&playing&&!reducedMotion&&!simple&&flowItems.some(item=>item.active);},
     animate(delta:number){if(this.needsAnimation()){phase=(phase+delta*.45)%1;positionFlow();}},
-    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048,lightPosition=3072,servoAngle=90,motion=false){
+    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048,lightPosition=3072,servoAngle=90,motion=false,oled:OledState={begun:false,revision:0,glyphs:[]}){
       if(wires!==previousWires){
         clearWires();previousWires=wires;
         wires.forEach((wire,index)=>{
@@ -169,12 +186,16 @@ export function createCircuitScene(lessonId:LessonId='blink') {
           const material=new THREE.MeshStandardMaterial({color:wireColor(wire),roughness:.32});
           const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,32,.3,8,false),material);group.add(mesh);wireMeshes.push(mesh);addFlow('wire:'+wire.id,curve,wire.from);
         });
-        for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
+        for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle'||lessonId==='oled-i2c')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
           const offset=-24*index,r=index?'resistor'+(index+1):'resistor',l=index?'led'+(index+1):'led';
           addFlow('resistor:'+r,new THREE.CatmullRomCurve3([new THREE.Vector3(24.5,8+offset,2),new THREE.Vector3(32,8+offset,4),new THREE.Vector3(39.5,8+offset,2)]),r+':a');
           if(lessonId==='rgb-mixing'){const anode=['rgb:r','rgb:g','rgb:b'][index];addFlow('led:rgb-'+index,new THREE.CatmullRomCurve3([terminalPosition(anode)!,new THREE.Vector3(57,-15,6),terminalPosition('rgb:k')!]),anode);continue;}
           addFlow('led:'+l,new THREE.CatmullRomCurve3([new THREE.Vector3(49,-1+offset,2),new THREE.Vector3(52.4,5+offset,2),new THREE.Vector3(54,7+offset,5),new THREE.Vector3(55.5,5+offset,2),new THREE.Vector3(59,-1+offset,2)]),l+':a');
         }
+      }
+      if(oledCanvas&&oledTexture&&(oledRevision!==oled.revision||oledBegun!==oled.begun)){
+        oledRevision=oled.revision;oledBegun=oled.begun;const ctx=oledCanvas.getContext('2d')!;ctx.fillStyle='#080f1b';ctx.fillRect(0,0,512,256);ctx.fillStyle='#e7f5ff';ctx.textBaseline='top';
+        if(oled.begun)for(const glyph of oled.glyphs){ctx.font=`${32*glyph.size}px monospace`;ctx.fillText(glyph.text,glyph.x*4,glyph.y*4);}oledTexture.needsUpdate=true;
       }
       if(pirDome){pirDome.emissive.set(motion?0x183f86:0x000000);pirDome.emissiveIntensity=motion?.4:0;}
       if(sensorMaterial)sensorMaterial.color.setRGB(.3+.5*lightPosition/4095,.24+.45*lightPosition/4095,.16+.4*lightPosition/4095);

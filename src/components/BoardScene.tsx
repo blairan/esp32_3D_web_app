@@ -1,3 +1,4 @@
+import type {OledState} from '../program/peripheralTypes';
 import type {LessonId} from '../lessons';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -13,7 +14,7 @@ interface SceneProps {
   zoomCommand: { direction: 1 | -1; sequence: number } | null;
   onSelect: (id: string) => void;
   onButtonPress?:(down:boolean)=>void;accent:string;flow:boolean;reducedMotion:boolean;
-  lesson?: {id:LessonId;pressed:boolean;lit2:boolean;lit3:boolean;brightness:number;rgb:number[];potPosition:number;lightPosition:number;servoAngle:number;motion:boolean; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
+  lesson?: {id:LessonId;pressed:boolean;lit2:boolean;lit3:boolean;brightness:number;rgb:number[];potPosition:number;lightPosition:number;servoAngle:number;motion:boolean;oled:OledState; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
 }
 export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion,onButtonPress }: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
@@ -198,7 +199,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     api.current.simplify(currentSimple.current);
     if (lessonMode) {
       const circuit = createCircuitScene(lessonId); scene.add(circuit.group); hitboxes.push(...circuit.hitboxes); api.current.circuit = circuit;api.current.setEffects();
-      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending,value.pressed,value.lit2,value.lit3,value.brightness,value.rgb,value.potPosition,value.lightPosition,value.servoAngle,value.motion); requestRender();
+      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending,value.pressed,value.lit2,value.lit3,value.brightness,value.rgb,value.potPosition,value.lightPosition,value.servoAngle,value.motion,value.oled); requestRender();
     }
     const raycaster = new THREE.Raycaster();
     const activePointers = new Set<number>();
@@ -251,7 +252,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
   useEffect(() => { api.current?.reset(); }, [resetKey]);
   useEffect(() => { currentSimple.current = simple;appearanceRef.current.simple=simple; api.current?.simplify(simple);api.current?.setEffects(); }, [simple]);
   useEffect(() => { if (zoomCommand) api.current?.zoom(zoomCommand.direction); }, [zoomCommand]);
-  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed,lesson.lit2,lesson.lit3,lesson.brightness,lesson.rgb,lesson.potPosition,lesson.lightPosition,lesson.servoAngle,lesson.motion);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
+  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed,lesson.lit2,lesson.lit3,lesson.brightness,lesson.rgb,lesson.potPosition,lesson.lightPosition,lesson.servoAngle,lesson.motion,lesson.oled);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
   useEffect(()=>{appearanceRef.current={accent,flow,reducedMotion,simple};api.current?.setAccent(accent);},[accent,flow,reducedMotion,simple]);
   return <><div className="scene-host" ref={host} data-scene-status={status} />{status !== 'ready' && <div className="scene-message" role="status">{status === 'loading' ? '正在準備 3D 開發板…' : <><strong>目前無法顯示 3D 模型</strong><span>請確認瀏覽器支援 WebGL 並啟用硬體加速。你仍可使用下方清單探索全部接腳。</span><button onClick={() => setSceneVersion(version => version + 1)}>重試 3D 模型</button></>}</div>}</>;
 }

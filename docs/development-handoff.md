@@ -175,3 +175,11 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - `?lesson=pir-delay#code`：3.3V OUT → GPIO27、外部 5V 並共地、7 線範例、虛擬 3000ms 延遲及再次活動重新計時。
 - 138 項測試、建置及兩課瀏覽器流程通過；Wiki 22 篇，原十二課載入／接線回歸通過。
 - 詳細契約與限制見 [motion-range-lessons.md](motion-range-lessons.md)。下一步：使用者試用；溫溼度課尚未開始。
+
+### 2026-10-28：第十五、十六課完成
+
+- `?lesson=climate-dht#code`：DHT22 三腳上拉模組、GPIO4 DATA、GPIO23 LED，六線範例；理想整數溫溼度、2000ms 共用快取、模擬失敗與診斷。
+- `?lesson=oled-i2c#code`：3.3V SSD1306 128×64、GPIO21 SDA／22 SCL、0x3C、四線範例；文字緩衝與顯示提交分開、計數、3D／預覽同步。
+- 沿用空架構、依名稱補全／參數 Wiki、可展開答案、範例切換恢復；151 項測試、正式建置、兩課 Worker／桌面與窄螢幕及原十四課載入接線回歸通過，Wiki 共 24 篇。
+- 詳細教學契約、來源連線及驗證限制見 [climate-oled-lessons.md](climate-oled-lessons.md)。程式與接線仍只存本頁；外觀偏好存本機，不宣稱跨裝置同步。
+- 下一個最小步驟：使用者試用兩課。原定 18 項尚餘七段顯示器計數與整合專題；本輪不自動開始。
