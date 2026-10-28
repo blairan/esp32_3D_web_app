@@ -23,7 +23,7 @@ export default function LessonPanel({buttonControl,state,analysis,dispatch}:Prop
       <div className="level-switch" role="group" aria-label="輸出電位"><button aria-pressed={state.level==='HIGH'} onClick={()=>dispatch({type:'level',level:'HIGH'})}>HIGH <span>高電位</span></button><button aria-pressed={state.level==='LOW'} onClick={()=>dispatch({type:'level',level:'LOW'})}>LOW <span>低電位</span></button></div>
       <div className="led-status" data-led-lit={String(analysis.lit)}><span><Lightbulb size={17}/>LED 狀態</span><strong className={analysis.lit?'lit':''}><i/>{analysis.lit?'亮起':'熄滅'}</strong></div>
     </section>
-    <div className="lesson-actions"><button onClick={()=>dispatch({type:'example'})}><BookOpen size={16}/>載入範例</button><button onClick={()=>dispatch({type:'clear'})} disabled={!state.wires.length&&!state.pending&&state.level==='LOW'}><Trash2 size={15}/>清空接線</button></div>
+    <div className="lesson-actions"><button aria-pressed={state.exampleBackup!==null} onClick={()=>dispatch({type:'example'})}><BookOpen size={16}/>{state.exampleBackup!==null?'隱藏接線範例':'顯示接線範例'}</button><button onClick={()=>dispatch({type:'clear'})} disabled={!state.wires.length&&!state.pending&&state.level==='LOW'}><Trash2 size={15}/>清空接線</button></div>
     {buttonControl?<ButtonControl {...buttonControl}/>:null}
     <p className="lesson-disclaimer">固定 GPIO23、220 Ω 與單顆 LED 的離散教學規則；不執行 Arduino 程式，也不計算真實電流。重新整理頁面會清空接線。</p>
   </aside>;

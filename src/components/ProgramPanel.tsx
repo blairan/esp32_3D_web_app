@@ -11,11 +11,11 @@ const ProgramEditor=lazy(()=>import('./ProgramEditor'));
 import type { ProgramState } from '../program/runtime';
 import type { CircuitAnalysis } from '../circuit';
 interface Props {
-  lessonId:LessonId;buttonControl?:ButtonControlProps;source:string;state:ProgramState;analysis:CircuitAnalysis;
+  exampleVisible:boolean;lessonId:LessonId;buttonControl?:ButtonControlProps;source:string;state:ProgramState;analysis:CircuitAnalysis;
   onChange:(source:string)=>void;onStart:()=>void;onPause:()=>void;onResume:()=>void;onStop:()=>void;onReset:()=>void;onScaffold:()=>void;onWiringExample:()=>void;
 }
 const statusLabels={idle:'尚未執行',starting:'準備中',running:'執行中',paused:'已暫停',stopped:'已停止',error:'需要修正'};
-export default function ProgramPanel({lessonId,buttonControl,source,state,analysis,onChange,onStart,onPause,onResume,onStop,onReset,onScaffold,onWiringExample}:Props){
+export default function ProgramPanel({exampleVisible,lessonId,buttonControl,source,state,analysis,onChange,onStart,onPause,onResume,onStop,onReset,onScaffold,onWiringExample}:Props){
   const openWiki=useWiki();
   const editor=useRef<ProgramEditorHandle>(null);
   const active=['starting','running','paused'].includes(state.status);
@@ -34,7 +34,7 @@ export default function ProgramPanel({lessonId,buttonControl,source,state,analys
     <div className="runtime-summary"><span className={`run-status status-${state.status}`} aria-live="polite" data-run-status={state.status}>{statusLabels[state.status]}</span><span>虛擬時間 <strong data-virtual-time={state.timeMs}>{state.timeMs.toLocaleString()} ms</strong></span></div>
     {lessonId==='dual-led'?<DualOutputs analysis={analysis} program={state}/>:<div className="gpio-readout"><span>GPIO23 <strong data-pin-mode={state.outputEnabled?'OUTPUT':'INPUT'}>{state.outputEnabled?'OUTPUT':'INPUT'}</strong> <b data-pin-level={state.level}>{state.level}</b></span><span className={`code-led${analysis.lit?' lit':''}`} data-led-lit={String(analysis.lit)}><Lightbulb size={17}/>{analysis.lit?'LED 亮起':'LED 熄滅'}</span></div>}
     {state.diagnostic?<div className="program-error" role="alert"><TriangleAlert size={18}/><div><strong>第 {state.diagnostic.line} 行，第 {state.diagnostic.column} 欄</strong><p>{state.diagnostic.message}</p><button onClick={jumpToError}>跳至錯誤位置</button></div></div>:null}
-    <div className={`program-wiring ${analysis.valid?'valid':''}`} data-circuit-code={analysis.code}>{analysis.valid?<CheckCircle2 size={19}/>:<TriangleAlert size={19}/>}<div><strong>{analysis.valid?'接線正確':analysis.title}</strong><p>{analysis.valid?'LED 跟隨各自程式輸出；暫停保留狀態，停止會熄燈。':analysis.description}</p></div><button onClick={onWiringExample}><BookOpen size={14}/>載入接線範例</button></div>
+    <div className={`program-wiring ${analysis.valid?'valid':''}`} data-circuit-code={analysis.code}>{analysis.valid?<CheckCircle2 size={19}/>:<TriangleAlert size={19}/>}<div><strong>{analysis.valid?'接線正確':analysis.title}</strong><p>{analysis.valid?'LED 跟隨各自程式輸出；暫停保留狀態，停止會熄燈。':analysis.description}</p></div><button aria-pressed={exampleVisible} onClick={onWiringExample}><BookOpen size={14}/>{exampleVisible?'隱藏接線範例':'顯示接線範例'}</button></div>
     <details className="program-syntax"><summary>支援語法與限制</summary><p><code>int name = 23;</code>、<code>void setup()</code>、<code>void loop()</code>、<code>pinMode(pin, OUTPUT)</code>、<code>digitalWrite(pin, HIGH/LOW)</code>、<code>delay(ms)</code>。參數可使用整數常值或已宣告變數，支援 // 與 /* */ 註解。</p><p>{lessonId==='button-led'?'另支援 GPIO18 INPUT_PULLUP、digitalRead、單一 ==／!= 條件與 if／else 大括號區塊。不支援巢狀 if、else if、邏輯運算、算式、重新賦值、迴圈或函式庫。':'不支援算式、變數重新賦值、for/while、自訂函式、函式庫、Serial、PWM 或網路。'}程式上限 12,000 字元、400 行；delay 上限 60,000 ms，loop 需有正值 delay。</p></details>
     <details className="program-trace"><summary>訊號紀錄（最近 {state.trace.length} 筆）</summary>{state.trace.length?<ol>{[...state.trace].reverse().map((entry,index)=><li key={`${entry.timeMs}-${entry.line}-${index}`}><span>{entry.timeMs.toLocaleString()} ms</span><strong>{lessonId==='dual-led'?`GPIO${entry.gpio} `:''}{entry.level}</strong><span>第 {entry.line} 行</span></li>)}</ol>:<p>執行後會顯示每次 digitalWrite 的虛擬時間。</p>}</details>
     <p className="program-disclaimer">白名單教學模擬，不編譯任意 C/C++。離開此分頁會停止；重新整理會還原基本架構並清空接線。</p>

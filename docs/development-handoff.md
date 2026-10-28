@@ -123,3 +123,9 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 ## 第三項：雙 LED 交替閃爍
 
 已加入第三課與 deep link `?lesson=dual-led#code`：GPIO23／GPIO22 兩條各自 220 Ω 與 LED 支路、六條接線範例、獨立手動與程式輸出、分支診斷與電流、雙列 3D／各端點、空架構／補全／標準答案、十篇 Wiki。Worker 新增 per-GPIO outputs 與 trace gpio，保留舊欄位；原兩課仍限制 GPIO23。停止／重設／錯誤清除雙輸出，換課保護與外觀不變。72 項單元測試、新課 14 項與既有 31 項瀏覽器回歸通過。詳見 dual-led-lesson.md；沿 main→Actions→Pages 發布並核對公開結果。下一課交通燈尚未實作，不自動啟動。
+
+### 2026-10-28：接線範例切換
+- 三個專題的接線頁與程式頁共用同一個顯示／隱藏狀態，按鈕提供 `aria-pressed`。
+- 顯示前備份原本導線，再次點擊恢復原本導線；空白工作區則恢復為無導線。兩次切換皆取消待接端點、手動輸出回 LOW，不修改程式文字。
+- 範例期間可修改導線，再隱藏時回到顯示前接線。清空接線或切換專題會清除備份，避免舊接線意外回復。
+- 單元測試 73 項通過、建置通過。Browser plugin not available，使用 Playwright Chromium 驗證三專題／兩入口及 390px 版面。

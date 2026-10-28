@@ -65,3 +65,30 @@ test('loading example and clearing reset output to LOW, without mutating shared 
 test('empty circuit cannot light even if HIGH was selected', () => {
   assert.equal(analyzeCircuit([],'HIGH').code,'empty');assert.equal(analyzeCircuit([],'HIGH').lit,false);
 });
+
+test('example toggle restores learner wiring for all lessons and clear discards the preview', () => {
+  for (const lessonId of ['blink', 'button-led', 'dual-led'] as const) {
+    let state = circuitReducer(initialCircuitState, {type:'lesson',lessonId});
+    state = circuitReducer(state, {type:'pick',terminal:'J3-02'});
+    state = circuitReducer(state, {type:'pick',terminal:'resistor:b'});
+    const original = state.wires;
+    state = circuitReducer(state, {type:'example'});
+    assert.deepEqual(state.wires, exampleWires(lessonId));
+    assert.deepEqual(state.exampleBackup, original);
+    state = circuitReducer(state, {type:'level',level:'HIGH',gpio:22});
+    state = circuitReducer(state, {type:'example'});
+    assert.deepEqual(state.wires, original);
+    assert.equal(state.exampleBackup, null);
+    assert.equal(state.level2, 'LOW');
+    state = circuitReducer(state, {type:'example'});
+    state = circuitReducer(state, {type:'clear'});
+    assert.equal(state.exampleBackup, null);
+    state = circuitReducer(state, {type:'example'});
+    state = circuitReducer(state, {type:'example'});
+    assert.deepEqual(state.wires, []);
+    state = circuitReducer(state, {type:'example'});
+    state = circuitReducer(state, {type:'lesson',lessonId:'blink'});
+    assert.equal(state.exampleBackup, null);
+    assert.deepEqual(original, [{id:'wire-1',from:'J3-02',to:'resistor:b'}]);
+  }
+});

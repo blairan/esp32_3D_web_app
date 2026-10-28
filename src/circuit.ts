@@ -5,7 +5,7 @@ export type OutputLevel = 'HIGH' | 'LOW';
 export interface CircuitWire { id: string; from: string; to: string }
 export interface CircuitState {
   lessonId:LessonId; wires: CircuitWire[]; pending: string | null; level: OutputLevel;level2:OutputLevel;
-  notice: string; nextWire: number;
+  notice: string; nextWire: number; exampleBackup: CircuitWire[] | null;
 }
 export type CircuitAction =
   | { type: 'pick'; terminal: string }
@@ -17,7 +17,7 @@ export const lessonDefinition = {
   groundIds: ['J3-01', 'J3-07', 'J2-14'],
   parts: { 'resistor:a': '電阻 A 端', 'resistor:b': '電阻 B 端', 'led:a': 'LED 正極 A+', 'led:k': 'LED 負極 K−' },
 } as const;
-export const initialCircuitState: CircuitState = { lessonId:'blink', wires: [], pending: null, level: 'LOW',level2:'LOW', notice: '', nextWire: 1 };
+export const initialCircuitState: CircuitState = { lessonId:'blink', wires: [], pending: null, level: 'LOW',level2:'LOW', notice: '', nextWire: 1, exampleBackup: null };
 export function isTerminal(id: string,lessonId:LessonId='blink') { return pinById.has(id) || Object.hasOwn(lessons[lessonId].parts, id); }
 export function terminalLabel(id: string,lessonId:LessonId='blink'): string {
   const pin = pinById.get(id);
@@ -53,7 +53,9 @@ export function circuitReducer(state: CircuitState, action: CircuitAction): Circ
     }
     case 'remove': return { ...state, wires: state.wires.filter(w => w.id !== action.id), pending: null, notice: '已刪除導線。' };
     case 'level': return { ...state,...(action.gpio===22?{level2:action.level}:{level:action.level}), notice: `GPIO${action.gpio??23} 輸出已設為 ${action.level}。` };
-    case 'example': return { ...state, wires: exampleWires(state.lessonId), pending: null, level: 'LOW',level2:'LOW', notice: '已載入正確接線範例，請使用輸出控制觀察 LED。' };
+    case 'example': return state.exampleBackup !== null
+      ? { ...state, wires: state.exampleBackup, exampleBackup: null, pending: null, level: 'LOW', level2: 'LOW', notice: '已隱藏範例接線，恢復原本的接線。' }
+      : { ...state, exampleBackup: state.wires, wires: exampleWires(state.lessonId), pending: null, level: 'LOW', level2: 'LOW', notice: '已顯示範例接線；再按一次可隱藏並恢復原本的接線。' };
     case 'lesson':return {...initialCircuitState,lessonId:action.lessonId};
     case 'clear': return { ...initialCircuitState,lessonId:state.lessonId, nextWire: state.nextWire, notice: '已清空接線，輸出回到 LOW。' };
     case 'cancel': return { ...state, pending: null, notice: '已取消接線起點。' };
