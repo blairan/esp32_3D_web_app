@@ -96,3 +96,6 @@
 .sensor-toggle{display:flex;align-items:center;gap:10px;font-size:16px;line-height:1.8;margin:16px 0}.sensor-toggle input{width:20px;height:20px;flex-shrink:0}
 
 .oled-preview{display:block;width:100%;height:auto;aspect-ratio:2;border:8px solid #26364c;border-radius:7px;margin:14px 0;background:#101722;overflow:hidden}
+.board-selector{display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}.board-selector select{font:inherit;min-height:40px;max-width:210px;padding:6px;border:1px solid var(--border);border-radius:7px;color:var(--panel-ink);background:var(--panel-bg)}
+.uno-connection .terminal-groups{display:flex;flex-wrap:wrap;gap:24px}.uno-connection .terminal-groups section{min-width:145px;flex:1}.uno-connection .terminal-buttons{display:flex;flex-wrap:wrap;gap:8px}.uno-notice{padding:12px;border:1px solid var(--border);border-radius:8px;line-height:1.8}.uno-outputs{display:flex;flex-wrap:wrap;gap:12px}.uno-outputs p{padding:8px;border:1px solid var(--border);border-radius:7px}
+@media(max-width:800px){.board-selector{width:100%;justify-content:flex-end}.board-selector select{max-width:210px}.header-controls{flex-wrap:wrap}.uno-connection .connection-body{display:block}}

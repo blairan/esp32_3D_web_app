@@ -25,7 +25,7 @@ scope.onmessage=({data})=>{
       if(!runtime||running)return;runtime.setInput(data.input);runtime.setAnalogInput(data.analogInput??null);runtime.setDistance(data.distanceCm??null);runtime.setDevices(data.devices??{climate:null,oledWired:false});running=true;
       scope.postMessage({type:'snapshot',revision,snapshot:runtime.snapshot()});timer=setTimeout(tick,50);return;
     }
-    running=false;cancelTimer();runtime=new ProgramRuntime(parseProgram(data.source,data.lessonId),data.input,data.analogInput??null,data.distanceCm??null,data.devices);
+    running=false;cancelTimer();runtime=new ProgramRuntime(parseProgram(data.source,data.lessonId,data.boardId),data.input,data.analogInput??null,data.distanceCm??null,data.devices);
     const snapshot=runtime.advanceTo(0);running=true;scope.postMessage({type:'snapshot',revision,snapshot});timer=setTimeout(tick,50);
   }catch(error){fail(error);}
 };

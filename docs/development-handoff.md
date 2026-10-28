@@ -190,3 +190,11 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - `?lesson=environment-lab#code`：十線 DHT22／OLED／LED，每兩秒取樣、畫面提交與門檻警示。
 - 第一輪18項均已實作；157項測試、建置與兩課瀏覽器流程通過，Wiki26篇。詳見 [final-two-lessons.md](final-two-lessons.md)。
 - 原始碼與紀錄沿 main→GitHub Pages 發布；下一個最小步驟為使用者試用與回饋，沒有自動開始新課程。實機效能及硬體驗收仍待測，不宣稱完整CPU／電路模擬或跨裝置進度同步。
+
+### 2026-10-28：UNO R3及18課適配完成
+
+- 第二板型UNO R3，32個主排針端點、原生D／A腳、5V邏輯、10位ADC、A4／A5別名與板型切換。官方資料已固定版本核對，ICSP僅外觀。
+- 全18課適配，包含PWM腳限制、ADC門檻／轉換、Servo、5V Echo直連、DHT22、OLED與TM1637；共用AST／Worker明確攜帶boardId，不以ESP32假腳位執行UNO程式。
+- 186項測試、正式建置、兩板36份瀏覽器Worker答案、UNO32點選／真實raycast／320及390px、板型切換及教材流程通過。UNO目錄28篇，ESP32維持26篇。
+- 原始碼、CSV、課程契約與驗證記錄納入遠端main。詳見 [uno-r3-board-baseline.md](uno-r3-board-baseline.md) 與 [uno-r3-lessons.md](uno-r3-lessons.md)。
+- 下一步：使用者試用與Acer實機效能／操作回饋；不宣稱實體硬體、完整AVR、16位int溢位或跨裝置進度驗收通過。

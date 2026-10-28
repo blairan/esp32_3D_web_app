@@ -1,3 +1,4 @@
+import {pageBoardId} from '../boards/registry';
 import {emptyPeripherals,type DeviceInputs} from './peripheralTypes';
 const defaultDevices:DeviceInputs={climate:{temperature:25,humidity:60},oledWired:true};
 import type {LessonId} from '../lessons';
@@ -31,7 +32,7 @@ export default function useProgramRunner(lessonId:LessonId='blink',input:InputLe
         if(stateRef.current.status==='running'||stateRef.current.status==='starting')update({...data.snapshot,status:'running',diagnostic:null});
       };
       worker.onerror=event=>{event.preventDefault();if(workerRef.current===worker)fail('無法載入程式執行器。請確認瀏覽器支援 Worker，或重新載入頁面。');};
-      const command:WorkerCommand={type:'start',source,revision,lessonId,input:inputRef.current,analogInput:analogRef.current,distanceCm:distanceRef.current,devices:devicesRef.current};worker.postMessage(command);
+      const command:WorkerCommand={type:'start',boardId:pageBoardId,source,revision,lessonId,input:inputRef.current,analogInput:analogRef.current,distanceCm:distanceRef.current,devices:devicesRef.current};worker.postMessage(command);
     }catch{dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},...emptyPeripherals(),servo:{attached:false,angle:null},variables:{},lastAnalogRead:null,lastPulse:null,lastRead:null,level:'LOW',diagnostic:{message:'這個瀏覽器無法啟動 Worker，請改用現行 Chrome 或 Edge。',line:1,column:1}});}
   },[dispose,update,lessonId]);
   const pause=useCallback(()=>{

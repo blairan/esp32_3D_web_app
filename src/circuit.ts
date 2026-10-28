@@ -1,3 +1,5 @@
+import {pageBoardId} from './boards/registry.ts';
+import {unoCurrentPath} from './uno/circuit.ts';
 import {lessons,hasButton,type LessonId} from './lessons.ts';
 import { pins, pinById, titleFor } from './board.ts';
 
@@ -159,6 +161,7 @@ export function wireColor(wire: CircuitWire): string {
 export interface CurrentSegment {id:string;kind:'wire'|'resistor'|'led';from:string;to:string}
 /** Conventional current direction, not electron speed or an analog current estimate. */
 export function currentPath(wires:CircuitWire[],level:OutputLevel,lessonId:LessonId='blink',secondaryLevel:OutputLevel='LOW',thirdLevel:OutputLevel='LOW'):CurrentSegment[]{
+  if(pageBoardId==='uno-r3')return unoCurrentPath(wires,lessonId,[level,secondaryLevel,thirdLevel]);
   if(lessonId==='seven-counter'||lessonId==='oled-i2c')return [];
   if(lessonId==='environment-lab')return analyzeDeviceWires(wires,lessonId).valid?currentPath(potLedWires(wires),level):[];
   if(lessonId==='climate-dht')return analyzeDeviceWires(wires,lessonId).valid?currentPath(potLedWires(wires),level):[];

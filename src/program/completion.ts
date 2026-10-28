@@ -1,3 +1,5 @@
+import {pageBoardId} from '../boards/registry.ts';
+import {unoText} from '../boards/lessonProfiles.ts';
 import {hasStatefulButton,type LessonId} from '../lessons.ts';
 export interface Suggestion {label:string;detail:string;template:string;type:string}
 export const lessonSuggestions:Suggestion[]=[
@@ -15,7 +17,7 @@ export function declaredVariables(before:string):string[]{
  }
  return [...new Set(scopes.flat())];
 }
-export function suggestionsFor(lessonId:LessonId):Suggestion[]{
+function espSuggestionsFor(lessonId:LessonId):Suggestion[]{
  if(lessonId==='environment-lab')return [...suggestionsFor('climate-dht'),...suggestionsFor('oled-i2c')];
  if(lessonId==='seven-counter')return [...lessonSuggestions.filter(s=>s.label==='int'||s.label==='delay'),{label:'TM1637Display',detail:'CLK22、DIO21；固定四位數',template:'TM1637Display ${1:digits}(22,21);',type:'class'},{label:'digits.showNumberDec',detail:'整數 0～9999，不補前導零',template:'digits.showNumberDec(${1:count});',type:'function'},{label:'digits.setBrightness',detail:'亮度 0～7（本版不模擬亮度差）',template:'digits.setBrightness(${1:7});',type:'function'}];
  if(lessonId==='climate-dht')return [...lessonSuggestions,{label:'if',detail:'單一比較與最多四層 if／else；不支援 ||',template:'if (${1:temperature} >= ${2:30}) {\n  ${3}\n}',type:'keyword'},{label:'DHT',detail:'全域 DHT climate(4, DHT22); · 模組含上拉',template:'DHT ${1:climate}(4, DHT22);',type:'class'},{label:'climate.begin',detail:'DHT 物件.begin() · 先初始化',template:'climate.begin();',type:'function'},{label:'climate.readTemperature',detail:'DHT 物件.readTemperature() · 整數 °C，2 秒共用快取',template:'climate.readTemperature()',type:'function'},{label:'climate.readHumidity',detail:'DHT 物件.readHumidity() · 整數 %RH，2 秒共用快取',template:'climate.readHumidity()',type:'function'}];
@@ -81,3 +83,5 @@ void loop() {
 export function servoSuggestions(source:string){const clean=source.replace(/\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*/g,' ');const name=clean.match(/\bServo\s+([A-Za-z_]\w*)\s*;/)?.[1]??'arm';return suggestionsFor('servo-angle').map(s=>({...s,label:s.label.replace(/^arm\./,name+'.'),template:s.template.replace(/^arm\./,name+'.')}));}
 
 export function deviceSuggestions(source:string,id:LessonId){const clean=source.replace(/\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*/g,' ');const climate=clean.match(/\bDHT\s+([A-Za-z_]\w*)\s*\(/)?.[1]??'climate',oled=clean.match(/\bAdafruit_SSD1306\s+([A-Za-z_]\w*)\s*\(/)?.[1]??'display',digits=clean.match(/\bTM1637Display\s+([A-Za-z_]\w*)\s*\(/)?.[1]??'digits';const rename=(s:string)=>s.replace(/^climate\./,climate+'.').replace(/^display\./,oled+'.').replace(/^digits\./,digits+'.');return suggestionsFor(id).map(s=>({...s,label:rename(s.label),template:rename(s.template)}));}
+
+export function suggestionsFor(lessonId:LessonId):Suggestion[]{const items=espSuggestionsFor(lessonId);return pageBoardId==='uno-r3'?items.map(item=>({...item,detail:unoText(item.detail,lessonId),template:unoText(item.template,lessonId)})):items;}

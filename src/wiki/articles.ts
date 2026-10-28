@@ -1,5 +1,5 @@
 export const topicArticles={seven:'seven-counter',integration:'environment-lab',gpio:'gpio-levels',led:'led-circuit',structure:'setup-loop',pinMode:'pin-mode',digitalWrite:'digital-write',delay:'delay-time',button:'button-pullup',digitalRead:'digital-read',if:'if-else',dual:'dual-led',traffic:'traffic-light',toggle:'button-toggle',counter:'button-counter',millis:'millis-state',buzzer:'buzzer-doorbell',pwm:'pwm-breathing',analogWrite:'pwm-breathing',rgb:'rgb-mixing',pot:'pot-dimming',analogRead:'pot-dimming',light:'ldr-nightlight',servo:'servo-angle',Servo:'servo-angle',ultrasonic:'ultrasonic-alert',pir:'pir-delay',pulseIn:'ultrasonic-alert',delayMicroseconds:'ultrasonic-alert',climate:'climate-dht',oled:'oled-i2c'} as const;
-export type ArticleId=typeof topicArticles[keyof typeof topicArticles];
+export type ArticleId=typeof topicArticles[keyof typeof topicArticles]|'uno-overview'|'uno-esp32-differences';
 export interface WikiArticle {id:ArticleId;title:string;summary:string;sections:{title:string;text:string}[];example:string;exampleNote:string;mistakes:string[];question:string;limitation:string;references:{label:string;url:string}[];related:ArticleId[]}
 const arduino='https://docs.arduino.cc/language-reference/en/';
 export const articles:WikiArticle[]=[

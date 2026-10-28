@@ -1,7 +1,8 @@
 import {TeachingPeripherals} from './peripherals.ts';
 import {emptyPeripherals,type DeviceInputs,type ClimateReading,type OledState} from './peripheralTypes.ts';
-import {lessons,hasADC} from '../lessons.ts';
-import { pins } from '../board.ts';
+import {hasADC} from '../lessons.ts';
+import {getBoard} from '../boards/registry.ts';
+import {lessonPins} from '../boards/lessonProfiles.ts';
 import { limits, ProgramError } from './language.ts';
 import type { Program, Statement, Expression, SourceLocation, ProgramDiagnostic } from './language.ts';
 export type InputLevel='HIGH'|'LOW'|null;
@@ -10,10 +11,11 @@ export interface ProgramSnapshot {climate:ClimateReading|null;oled:OledState;las
 export type RunStatus='idle'|'starting'|'running'|'paused'|'stopped'|'error';
 export interface ProgramState extends ProgramSnapshot {status:RunStatus;diagnostic:ProgramDiagnostic|null}
 export const initialProgramState:ProgramState={...emptyPeripherals(),lastPulse:null,servo:{attached:false,angle:null},lastAnalogRead:null,variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
-const gpioPins=new Map(pins.filter(pin=>pin.gpio!==null).map(pin=>[pin.gpio!,pin]));
+
 interface Frame {body:Statement[];pc:number;locals:Map<string,number>}
 export class ProgramRuntime {
  private devices:TeachingPeripherals;
+ private board:ReturnType<typeof getBoard>;private profile:ReturnType<typeof lessonPins>;private gpioPins:Map<number,ReturnType<typeof getBoard>['pins'][number]>;
  private program:Program;private globals=new Map<string,number>();private frames:Frame[]=[];
  private phase:'setup'|'loop'='setup';private time=0;private waitingUntil:number|null=null;private loopStart=0;private loopWaited=false;
  private lastPulse:number|null=null;private distanceCm:number|null=100;private trigHighAt:number|null=null;private triggerReady=false;
@@ -22,27 +24,27 @@ export class ProgramRuntime {
  private outputs=new Map<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>();
  private outputEnabled=false;private inputEnabled=false;private input:InputLevel='HIGH';private lastRead:InputLevel=null;
  private level:'HIGH'|'LOW'='LOW';private line=0;private loopCount=0;private operations=0;private trace:TraceEntry[]=[];
- constructor(program:Program,input:InputLevel='HIGH',analogInput:number|null=0,distanceCm:number|null=100,devices:DeviceInputs={climate:{temperature:25,humidity:60},oledWired:true}){this.devices=new TeachingPeripherals(devices);this.setDistance(distanceCm);this.setAnalogInput(analogInput);this.program=program;this.input=input;for(const statement of program.globals)this.declareVariable(statement,this.globals);this.frames=[this.frame(program.setup)];}
+ constructor(program:Program,input:InputLevel='HIGH',analogInput:number|null=0,distanceCm:number|null=100,devices:DeviceInputs={climate:{temperature:25,humidity:60},oledWired:true}){this.program=program;this.board=getBoard(program.boardId);this.profile=lessonPins(program.boardId,program.lessonId);this.gpioPins=new Map(this.board.pins.filter(p=>p.gpio!==null).map(p=>[p.gpio!,p]));this.devices=new TeachingPeripherals(devices,program.boardId);this.setDistance(distanceCm);this.setAnalogInput(analogInput);this.program=program;this.input=input;for(const statement of program.globals)this.declareVariable(statement,this.globals);this.frames=[this.frame(program.setup)];}
  private frame(body:Statement[]):Frame{return {body,pc:0,locals:new Map()};}
  setDevices(inputs:DeviceInputs){this.devices.setInputs(inputs);}
  setDistance(value:number|null){if(value!==null&&value!==0&&(!Number.isInteger(value)||value<2||value>400))throw new ProgramError('距離應為 2～400 cm，0 表示無回波，null 表示接線未確認。',{line:1,column:1});this.distanceCm=value;}
- setAnalogInput(value:number|null){if(value!==null&&(!Number.isInteger(value)||value<0||value>4095))throw new ProgramError('ADC 輸入必須為 0～4095 或未確認狀態。',{line:1,column:1});this.analogInput=value;}
+ setAnalogInput(value:number|null){if(value!==null&&(!Number.isInteger(value)||value<0||value>this.board.adcMax))throw new ProgramError(`ADC 輸入必須為 0～${this.board.adcMax} 或未確認狀態。`,{line:1,column:1});this.analogInput=value;}
  setInput(input:InputLevel){this.input=input;}
  private value(expression:Expression):number {
   if(expression.kind==='dht-read')return this.devices.readDht(expression.humidity,this.time,expression.at);
   if(expression.kind==='pulse'){
-   const pin=this.checkPin(expression.pin,expression.at,'input');if(pin!==34||!this.inputEnabled)throw new ProgramError('請先設定 GPIO34 INPUT，才能讀取 ECHO。',expression.at);
-   if(!this.triggerReady)throw new ProgramError('請先讓 GPIO22 TRIG 由 LOW 變 HIGH 至少 10 微秒，再回 LOW。',expression.at);
+   const pin=this.checkPin(expression.pin,expression.at,'input');if(pin!==this.profile.input||!this.inputEnabled)throw new ProgramError(this.program.boardId==='uno-r3'?'請先設定 D8 INPUT，才能讀取 ECHO。':'請先設定 GPIO34 INPUT，才能讀取 ECHO。',expression.at);
+   if(!this.triggerReady)throw new ProgramError(this.program.boardId==='uno-r3'?'請先讓 D7 TRIG 由 LOW 變 HIGH 至少10微秒，再回 LOW。':'請先讓 GPIO22 TRIG 由 LOW 變 HIGH 至少 10 微秒，再回 LOW。',expression.at);
    const timeout=this.value(expression.timeout);if(timeout<1||timeout>30000)throw new ProgramError('pulseIn timeout 只接受 1～30000 微秒。',expression.at);
    this.triggerReady=false;if(this.distanceCm===null)throw new ProgramError('超音波供電、Echo 分壓或接線無法判定。',expression.at);
    const pulse=this.distanceCm*58;this.lastPulse=pulse<=timeout?pulse:0;return this.lastPulse;
   }
-  if(expression.kind==='analog'){this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError('請先設定 pinMode(34, INPUT)，才能 analogRead。',expression.at);if(this.analogInput===null)throw new ProgramError('感測器供電或 ADC 接線無法判定。',expression.at);this.lastAnalogRead=this.analogInput;return this.analogInput;}
+  if(expression.kind==='analog'){this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError(this.program.boardId==='uno-r3'?'請先設定 pinMode(A0,INPUT)，才能 analogRead。':'請先設定 pinMode(34, INPUT)，才能 analogRead。',expression.at);if(this.analogInput===null)throw new ProgramError('感測器供電或 ADC 接線無法判定。',expression.at);this.lastAnalogRead=this.analogInput;return this.analogInput;}
   if(expression.kind==='millis')return this.time;
   if(expression.kind==='binary'){const left=this.value(expression.left),right=this.value(expression.right);if(expression.operator==='/'&&right===0)throw new ProgramError('整數除法不能除以零。',expression.at);const value=expression.operator==='+'?left+right:expression.operator==='-'?left-right:right===0?NaN:Math.trunc(left/right);if(!Number.isInteger(value)||value < -2147483648||value>2147483647)throw new ProgramError('整數算式超過 32 位元有號範圍。',expression.at);return value;}
   if(expression.kind==='integer')return expression.value;
   if(expression.kind==='read'){
-   this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError(this.program.lessonId==='pir-delay'?'請先設定 pinMode(27, INPUT)，才能 digitalRead。':'請先執行 pinMode(18, INPUT_PULLUP)，才能 digitalRead。',expression.at);
+   this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError(this.program.boardId==='uno-r3'?'請先設定 D2 的本課輸入模式。':this.program.lessonId==='pir-delay'?'請先設定 pinMode(27, INPUT)，才能 digitalRead。':'請先執行 pinMode(18, INPUT_PULLUP)，才能 digitalRead。',expression.at);
    if(this.input===null)throw new ProgramError('數位輸入接線無法判定；請檢查供電、共地與 OUT。',expression.at);
    this.lastRead=this.input;return this.input==='HIGH'?1:0;
   }
@@ -56,14 +58,14 @@ export class ProgramRuntime {
   scope.set(statement.name,this.value(statement.value));
  }
  private checkPin(expression:Expression,at:SourceLocation,direction:'input'|'output'='output'){
-  const gpio=this.value(expression),pin=gpioPins.get(gpio);
+  const gpio=this.value(expression),pin=this.gpioPins.get(gpio);
   if(!pin)throw new ProgramError(`GPIO${gpio} 未知或未在這塊板引出。`,at);
   if(pin.category==='reserved')throw new ProgramError(`GPIO${gpio} 是 Flash 保留腳，禁止輸出。`,at);
   if(direction==='input'){
-   if(lessons[this.program.lessonId].inputGPIO===null||gpio!==lessons[this.program.lessonId].inputGPIO)throw new ProgramError((this.program.lessonId==='climate-dht'||this.program.lessonId==='environment-lab')?'本課 DHT22 DATA 固定使用 GPIO4。':this.program.lessonId==='pir-delay'?'本課僅支援 GPIO27 INPUT。':this.program.lessonId==='ultrasonic-alert'?'本課僅支援 GPIO34 INPUT 接收 ECHO。':hasADC(this.program.lessonId)?'本課僅支援 GPIO34 INPUT 作為 ADC。':'本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
+   if(this.profile.input===null||gpio!==this.profile.input)throw new ProgramError(this.program.boardId==='uno-r3'?`本課輸入固定為 ${this.profile.input!>=14?'A'+(this.profile.input!-14):'D'+this.profile.input}。`:(this.program.lessonId==='climate-dht'||this.program.lessonId==='environment-lab')?'本課 DHT22 DATA 固定使用 GPIO4。':this.program.lessonId==='pir-delay'?'本課僅支援 GPIO27 INPUT。':this.program.lessonId==='ultrasonic-alert'?'本課僅支援 GPIO34 INPUT 接收 ECHO。':hasADC(this.program.lessonId)?'本課僅支援 GPIO34 INPUT 作為 ADC。':'本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
   }else{
    if(pin.category==='input')throw new ProgramError(`GPIO${gpio} 只能輸入，不能設定輸出或驅動 LED。`,at);
-   if(!lessons[this.program.lessonId].outputGPIOs.includes(gpio))throw new ProgramError(`本課目前只支援 ${lessons[this.program.lessonId].outputGPIOs.map(pin=>'GPIO'+pin).join('、')} 輸出，GPIO${gpio} 尚未接入模擬。`,at);
+   if(!this.profile.outputs.includes(gpio))throw new ProgramError(`本課目前只支援 ${this.profile.outputs.map(pin=>'GPIO'+pin).join('、')} 輸出，GPIO${gpio} 尚未接入模擬。`,at);
   }
   return gpio;
  }
@@ -88,18 +90,19 @@ export class ProgramRuntime {
     case 'wire-begin':this.devices.wireBegin(this.value(statement.sda),this.value(statement.scl),statement.at);break;
     case 'oled-call':this.devices.oledCall(statement.method,statement.args.map(a=>typeof a==='string'?a:this.value(a)),statement.at);break;
     case 'servo-attach':{this.checkPin(statement.pin,statement.at);this.servo={attached:true,angle:90};break;}
-    case 'servo-write':{if(!this.servo.attached)throw new ProgramError('請先呼叫伺服物件的 attach(23)，才能 write。',statement.at);const angle=this.value(statement.angle);if(angle<0||angle>180)throw new ProgramError('伺服角度只接受 0 到 180 的整數；不接受微秒脈寬。',statement.at);this.servo.angle=angle;this.trace.push({gpio:23,timeMs:this.time,level:'HIGH',angle,line:this.line});this.trace=this.trace.slice(-8);break;}
+    case 'servo-write':{if(!this.servo.attached)throw new ProgramError(this.program.boardId==='uno-r3'?'請先呼叫 attach(9)，才能控制伺服。':'請先呼叫伺服物件的 attach(23)，才能 write。',statement.at);const angle=this.value(statement.angle);if(angle<0||angle>180)throw new ProgramError('伺服角度只接受 0 到 180 的整數；不接受微秒脈寬。',statement.at);this.servo.angle=angle;this.trace.push({gpio:this.profile.primary,timeMs:this.time,level:'HIGH',angle,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'assign':{let scope:Map<string,number>|undefined;for(let i=this.frames.length-1;i>=0;i--)if(this.frames[i].locals.has(statement.name)){scope=this.frames[i].locals;break;}scope??=this.globals.has(statement.name)?this.globals:undefined;if(!scope)throw new ProgramError(`未知變數「${statement.name}」，請先用 int 宣告。`,statement.at);scope.set(statement.name,this.value(statement.value));break;}
     case 'declare':this.declareVariable(statement,frame.locals);break;
-    case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode!=='OUTPUT'?'input':'output');if(statement.mode!=='OUTPUT')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===23)this.outputEnabled=true;}break;}
+    case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode!=='OUTPUT'?'input':'output');if(statement.mode!=='OUTPUT')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===this.profile.primary)this.outputEnabled=true;}break;}
     case 'pwm':{
+     if(this.program.boardId==='uno-r3'&&!this.board.pwmPins.includes(this.value(statement.pin)))throw new ProgramError('UNO analogWrite 只接受 D3／5／6／9／10／11 的 PWM 腳。',statement.at);
      const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 analogWrite。`,statement.at);
      const duty=this.value(statement.duty);if(duty<0||duty>255)throw new ProgramError('analogWrite 佔空比只接受 0 到 255 的整數。',statement.at);
-     const level=duty>0?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level,duty});if(gpio===23)this.level=level;this.trace.push({gpio,timeMs:this.time,level,duty,line:this.line});this.trace=this.trace.slice(-8);break;
+     const level=duty>0?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level,duty});if(gpio===this.profile.primary)this.level=level;this.trace.push({gpio,timeMs:this.time,level,duty,line:this.line});this.trace=this.trace.slice(-8);break;
     }
     case 'write':{
      const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 digitalWrite。`,statement.at);
-     const value=typeof statement.level==='string'?statement.level==='HIGH'?1:0:this.value(statement.level);if(value!==0&&value!==1)throw new ProgramError('digitalWrite 電位只接受 HIGH／LOW 或值為 0／1 的整數。',statement.at);const level=value===1?'HIGH':'LOW';const previous=this.outputs.get(gpio)?.level??'LOW';if(this.program.lessonId==='ultrasonic-alert'&&gpio===22){if(level==='HIGH'&&previous==='LOW'){this.trigHighAt=this.time*1000;this.triggerReady=false;}if(level==='LOW'&&previous==='HIGH'){this.triggerReady=this.trigHighAt!==null&&this.time*1000-this.trigHighAt>=9.999;this.trigHighAt=null;}}this.outputs.set(gpio,{enabled:true,level});if(gpio===23)this.level=level;this.trace.push({gpio,timeMs:this.time,level,line:this.line});this.trace=this.trace.slice(-8);break;}
+     const value=typeof statement.level==='string'?statement.level==='HIGH'?1:0:this.value(statement.level);if(value!==0&&value!==1)throw new ProgramError('digitalWrite 電位只接受 HIGH／LOW 或值為 0／1 的整數。',statement.at);const level=value===1?'HIGH':'LOW';const previous=this.outputs.get(gpio)?.level??'LOW';if(this.program.lessonId==='ultrasonic-alert'&&gpio===this.profile.trig){if(level==='HIGH'&&previous==='LOW'){this.trigHighAt=this.time*1000;this.triggerReady=false;}if(level==='LOW'&&previous==='HIGH'){this.triggerReady=this.trigHighAt!==null&&this.time*1000-this.trigHighAt>=9.999;this.trigHighAt=null;}}this.outputs.set(gpio,{enabled:true,level});if(gpio===this.profile.primary)this.level=level;this.trace.push({gpio,timeMs:this.time,level,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'if':{
      const left=this.value(statement.left),right=this.value(statement.right);const match=statement.operator==='=='?left===right:statement.operator==='!='?left!==right:statement.operator==='>'?left>right:statement.operator==='<'?left<right:statement.operator==='>='?left>=right:left<=right;const body=match?statement.then:statement.otherwise;
      this.frames.push(this.frame(body));break;

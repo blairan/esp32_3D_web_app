@@ -1,3 +1,5 @@
+import {pageBoardId} from '../boards/registry';
+import {unoLesson} from '../boards/lessonProfiles';
 import type {OledState} from '../program/peripheralTypes';
 import {lessons,hasButton,type LessonId} from '../lessons';
 import * as THREE from 'three';
@@ -89,7 +91,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     text(lessonId==='seven-counter'?'TM1637 / 4 DIGITS':'SSD1306 / 128x64',39,13,31,3);
    }else{
     const sensorMaterial=new THREE.MeshStandardMaterial({color:0xe3e8f1,roughness:.75});materials.push(sensorMaterial);const sensor=new THREE.Mesh(new THREE.BoxGeometry(13,12,5),sensorMaterial);sensor.position.set(39,-10,4);group.add(sensor);
-    const slitMaterial=new THREE.MeshStandardMaterial({color:0x77889e});materials.push(slitMaterial);for(let i=0;i<4;i++){const slit=new THREE.Mesh(new THREE.BoxGeometry(9,.7,.2),slitMaterial);slit.position.set(39,-14+i*2.5,6.6);group.add(slit);}text('DHT22 / 3V3',39,-1,24,2.5);
+    const slitMaterial=new THREE.MeshStandardMaterial({color:0x77889e});materials.push(slitMaterial);for(let i=0;i<4;i++){const slit=new THREE.Mesh(new THREE.BoxGeometry(9,.7,.2),slitMaterial);slit.position.set(39,-14+i*2.5,6.6);group.add(slit);}text(pageBoardId==='uno-r3'?'DHT22 / 5V':'DHT22 / 3V3',39,-1,24,2.5);
    }
    for(const id of oled?['oled:vcc','oled:gnd','oled:sda','oled:scl']:['dht:vcc','dht:data','dht:gnd']){const p=terminalPosition(id)!;tube([p,new THREE.Vector3(p.x,oled?-15:-19,1)],gray);text(lessonId==='seven-counter'?(id==='oled:sda'?'DIO':id==='oled:scl'?'CLK':id.split(':')[1].toUpperCase()):id.split(':')[1].toUpperCase(),p.x,p.y-3,7);}
   }
@@ -100,7 +102,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   if(lessonId==='ultrasonic-alert'||lessonId==='pir-delay'){
    const ultra=lessonId==='ultrasonic-alert';const boardMaterial=new THREE.MeshStandardMaterial({color:0x2e5686,roughness:.55});materials.push(boardMaterial);const housing=new THREE.Mesh(new THREE.BoxGeometry(ultra?30:20,15,2),boardMaterial);housing.position.set(41,-7,1);group.add(housing);
    if(ultra){for(const x of [33,49]){cylinder(5.5,4,x,-6,4,gray);const center=new THREE.Mesh(new THREE.CircleGeometry(4,24),boardMaterial);center.position.set(x,-6,6.1);group.add(center);}text('HC-SR04',41,4,20,2.5);
-    for(const [index,x,y] of [[1,33.5,-29],[2,55.5,-40]]){const resistor=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistor.rotation.z=Math.PI/2;resistor.position.set(x,y,2);group.add(resistor);const a=terminalPosition('echo'+index+':a')!,b=terminalPosition('echo'+index+':b')!;tube([a,new THREE.Vector3(x-4,y,2),new THREE.Vector3(x+4,y,2),b],gray);text(index+' kΩ',x,y+4.5,13,2.5);}
+    for(const [index,x,y] of pageBoardId==='uno-r3'?[]:[[1,33.5,-29],[2,55.5,-40]]){const resistor=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistor.rotation.z=Math.PI/2;resistor.position.set(x,y,2);group.add(resistor);const a=terminalPosition('echo'+index+':a')!,b=terminalPosition('echo'+index+':b')!;tube([a,new THREE.Vector3(x-4,y,2),new THREE.Vector3(x+4,y,2),b],gray);text(index+' kΩ',x,y+4.5,13,2.5);}
    }else{pirDome=new THREE.MeshPhysicalMaterial({color:0xe5eaf2,roughness:.5,clearcoat:.3,emissive:0x000000});materials.push(pirDome);const dome=new THREE.Mesh(new THREE.SphereGeometry(7,20,16),pirDome);dome.position.set(41,-6,3);group.add(dome);text('PIR OUT 3V3',41,5,24,2.5);}
    const sourceMaterial=new THREE.MeshStandardMaterial({color:0x596578});materials.push(sourceMaterial);const source=new THREE.Mesh(new THREE.BoxGeometry(22,9,3),sourceMaterial);source.position.set(38,26,2);group.add(source);text('EXTERNAL 5V',38,33,24,2.5);for(const id of ['supply:plus','supply:minus']){const p=terminalPosition(id)!;tube([p,new THREE.Vector3(p.x,22,2)],gray);text(id==='supply:plus'?'+5V':'GND',p.x,p.y-3,6);}
    for(const id of ultra?['ultra:vcc','ultra:trig','ultra:echo','ultra:gnd']:['pir:vcc','pir:out','pir:gnd']){const pos=terminalPosition(id)!;tube([pos,new THREE.Vector3(pos.x,-14,1)],gray);text(id.split(':')[1].toUpperCase(),pos.x,pos.y-3,7);}
@@ -144,7 +146,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     for(const [id,pos] of Object.entries(positions).filter(([id])=>id.startsWith('button:'))){const right=id.includes(':b');tube([new THREE.Vector3(...pos),new THREE.Vector3(right?40.5:30.5,pos[1],1)],gray);text(id.split(':')[1].toUpperCase(),pos[0],pos[1]-2.6,4,1.6);}
     text('BUTTON',35.5,-2.5,13,2.3);
   }
-  for(const [id,pos] of Object.entries(positions).filter(([id])=>Object.hasOwn(lessons[lessonId].parts,id))) {
+  for(const [id,pos] of Object.entries(positions).filter(([id])=>Object.hasOwn(pageBoardId==='uno-r3'?unoLesson(lessonId).parts:lessons[lessonId].parts,id))) {
     const terminal=new THREE.Mesh(new THREE.SphereGeometry(.8,16,10),green);terminal.position.set(...pos);group.add(terminal);
     const target=new THREE.Mesh(new THREE.SphereGeometry(2.2,12,8),pick);target.position.set(...pos);target.userData.pinId=id;group.add(target);hitboxes.push(target);
   }

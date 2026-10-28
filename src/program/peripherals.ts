@@ -1,14 +1,16 @@
+import {type BoardId} from '../boards/types.ts';
 import {ProgramError,type SourceLocation} from './language.ts';
 import type {ClimateReading,DeviceInputs,OledGlyph,OledState} from './peripheralTypes.ts';
 /** Explicit teaching models; these never load or execute native Arduino libraries. */
 export class TeachingPeripherals {
+ private boardId:BoardId;
  private inputs:DeviceInputs={climate:null,oledWired:false};private dhtReady=false;private climate:ClimateReading|null=null;
  private wireReady=false;private oled:OledState={begun:false,revision:0,glyphs:[]};private buffer:OledGlyph[]=[];private cursor={x:0,y:0};private size=1;
- constructor(inputs:DeviceInputs){this.setInputs(inputs);}
+ constructor(inputs:DeviceInputs,boardId:BoardId='esp32'){this.boardId=boardId;this.setInputs(inputs);}
  setInputs(inputs:DeviceInputs){const c=inputs.climate;if(c!==null&&(!Number.isInteger(c.temperature)||c.temperature< -40||c.temperature>80||!Number.isInteger(c.humidity)||c.humidity<0||c.humidity>100))throw new ProgramError('溫溼度教學值須為整數：-40～80°C、0～100%RH。',{line:1,column:1});if(typeof inputs.oledWired!=='boolean')throw new ProgramError('OLED 接線狀態無效。',{line:1,column:1});this.inputs={climate:c?{...c}:null,oledWired:inputs.oledWired};}
  beginDht(){this.dhtReady=true;this.climate=null;}
  readDht(humidity:boolean,time:number,at:SourceLocation){if(!this.dhtReady)throw new ProgramError('請先呼叫 DHT 物件的 begin()。',at);if(!this.climate||time-this.climate.timeMs>=2000){if(!this.inputs.climate)throw new ProgramError('DHT22 讀取失敗；請檢查供電、DATA、接地或模擬失敗設定。',at);this.climate={...this.inputs.climate,timeMs:time};}return humidity?this.climate.humidity:this.climate.temperature;}
- wireBegin(sda:number,scl:number,at:SourceLocation){if(sda!==21||scl!==22)throw new ProgramError('本課 Wire.begin 只接受 SDA 21、SCL 22。',at);this.wireReady=true;}
+ wireBegin(sda:number,scl:number,at:SourceLocation){if(sda!==(this.boardId==='uno-r3'?18:21)||scl!==(this.boardId==='uno-r3'?19:22))throw new ProgramError(this.boardId==='uno-r3'?'UNO 使用 Wire.begin()，SDA A4／SCL A5。':'本課 Wire.begin 只接受 SDA 21、SCL 22。',at);this.wireReady=true;}
  oledCall(method:string,args:(number|string)[],at:SourceLocation){
   if(method.startsWith('digits-')){
    if(!this.inputs.oledWired)throw new ProgramError('TM1637 供電、CLK 或 DIO 接線無效。',at);
@@ -19,7 +21,7 @@ export class TeachingPeripherals {
   }
   if(method==='begin'){
 
-   if(!this.wireReady)throw new ProgramError('請先 Wire.begin(21,22)，再初始化 OLED。',at);
+   if(!this.wireReady)throw new ProgramError(this.boardId==='uno-r3'?'請先 Wire.begin()，再初始化 OLED。':'請先 Wire.begin(21,22)，再初始化 OLED。',at);
    if(args[0]!==60)throw new ProgramError('此 OLED 模型固定 I²C 位址 0x3C（60）。',at);
    if(!this.inputs.oledWired)throw new ProgramError('OLED 供電、接地、SDA 或 SCL 接線無效。',at);
    this.oled={begun:true,revision:this.oled.revision+1,glyphs:[]};this.buffer=[];this.cursor={x:0,y:0};this.size=1;return;

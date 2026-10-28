@@ -1,6 +1,6 @@
 # ESP32 Interactive Lab
 
-繁體中文 ESP32 接腳探索工具。已實作可操作的 3D MVP 初版，板型為 **ESP32-DevKitC V4／ESP32-WROOM-32E，38 Pin**。
+繁體中文瀏覽器 3D 教學實驗室，支援 **ESP32-DevKitC V4／WROOM-32E（38 Pin）** 與 **Arduino UNO R3／ATmega328P（32個主要排針端點）**；每種板型都有18項專題。
 
 ## 開發與驗證
 
@@ -37,7 +37,7 @@ npm run preview
 
 ## 驗證狀態
 
-157 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+186 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -80,3 +80,9 @@ npm run preview
 第十五課：[溫溼度感測](https://blairan.github.io/esp32_3D_web_app/?lesson=climate-dht#code)；第十六課：[OLED 顯示（I²C）](https://blairan.github.io/esp32_3D_web_app/?lesson=oled-i2c#code)。DHT22 整數與兩秒共用取樣、警示門檻；SSD1306 ASCII／整數文字、緩衝與畫面提交。最新共 151 項測試、24 篇 Wiki。詳見 [教學契約與驗證](docs/climate-oled-lessons.md)。原定 18 項尚餘七段顯示器與整合專題。
 
 第十七課：[七段顯示器計數](https://blairan.github.io/esp32_3D_web_app/?lesson=seven-counter#code)；第十八課：[環境監測整合](https://blairan.github.io/esp32_3D_web_app/?lesson=environment-lab#code)。四位 TM1637 與 DHT22／OLED／LED 整合，第一輪 18 項均已實作；目前 157 項測試、26 篇 Wiki。詳見 [契約與驗證](docs/final-two-lessons.md)。
+
+## Arduino UNO R3
+
+右上「開發板」切換ESP32／UNO；舊網址仍預設ESP32。[UNO接腳探索](https://blairan.github.io/esp32_3D_web_app/?board=uno-r3)、[UNO第一課](https://blairan.github.io/esp32_3D_web_app/?board=uno-r3&lesson=blink#code)、[UNO環境監測整合](https://blairan.github.io/esp32_3D_web_app/?board=uno-r3&lesson=environment-lab#code)。切換前確認未保存工作，確認後清空練習並停止Worker，外觀保留。
+
+UNO使用5V邏輯、10位ADC、原生D／A接腳與A4／A5 I²C；18課都有接線、空架構、補全、Wiki與標準答案。186項測試通過，UNO 28篇教學／ESP32 26篇；兩板共36份答案經瀏覽器Worker檢查。官方資料與來源授權見 [板型基準](docs/uno-r3-board-baseline.md)，課程配置與驗證限制見 [UNO交接](docs/uno-r3-lessons.md)。ICSP僅外觀；沒有完整CPU、任意C++編譯、硬體連線或跨裝置進度同步。

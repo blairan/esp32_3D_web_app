@@ -1,18 +1,14 @@
-import sourcePins from './pins.json' with { type: 'json' };
 
-export type PinCategory = 'gpio' | 'input' | 'power' | 'ground' | 'special' | 'reserved';
-export interface Pin {
-  pinId: string; header: string; position: number; silkscreen: string;
-  officialName: string; gpio: number | null; role: string; restrictions: string;
-  category: PinCategory; x: number; y: number;
-}
+import {activeBoard,pageBoardId} from './boards/registry.ts';
+import type {Pin,PinCategory} from './boards/types.ts';
+export type {Pin,PinCategory} from './boards/types.ts';
 export const categories: Record<PinCategory, { label: string; color: string }> = {
   gpio: { label: '一般 GPIO', color: '#3563e9' },
   input: { label: '只能輸入', color: '#c55260' },
   power: { label: '電源', color: '#3978c4' },
   ground: { label: '接地', color: '#64748b' },
   special: { label: '特殊功能', color: '#b87a12' },
-  reserved: { label: 'Flash 保留', color: '#8360ae' },
+  reserved: { label: pageBoardId==='uno-r3'?'保留未接':'Flash 保留', color: '#8360ae' },
 };
 export function categoryFor(pin: {role: string; gpio: number | null; restrictions: string}): PinCategory {
   if (pin.role === 'power') return 'power';
@@ -23,16 +19,12 @@ export function categoryFor(pin: {role: string; gpio: number | null; restriction
   return 'gpio';
 }
 // Teaching geometry: pin order is verified; pitch and placement are illustrative, not manufacturing CAD.
-export const pins: Pin[] = sourcePins.map(pin => ({...pin, category: categoryFor(pin),
-  x: pin.header === 'J2' ? -12.7 : 12.7, y: (10 - pin.position) * 2.54,
-}));
-export const pinById = new Map(pins.map(pin => [pin.pinId, pin]));
-export const board = {
-  id: 'esp32-devkitc-v4-wroom-32e', name: 'ESP32-DevKitC V4', module: 'ESP32-WROOM-32E',
-  source: 'https://github.com/espressif/esp-dev-kits/blob/bd4d4ac18657e73583af3d7c0b0a23c3cddf3735/docs/en/esp32-devkitc/user_guide.rst',
-};
-export function titleFor(pin: Pin) { return pin.gpio === null ? pin.silkscreen : `GPIO ${pin.gpio}`; }
+export const pins:Pin[]=activeBoard.pins;
+export const pinById=new Map(pins.map(pin=>[pin.pinId,pin]));
+export const board=activeBoard;
+export function titleFor(pin: Pin) { return pageBoardId==='uno-r3'?pin.silkscreen:pin.gpio === null ? pin.silkscreen : `GPIO ${pin.gpio}`; }
 export function functionFor(pin: Pin) {
+  if(pageBoardId==='uno-r3')return pin.role==='ground'?'共同電位參考／接地':pin.role==='power'?pin.silkscreen+' 電源／參考':pin.role==='gpio'?(pin.gpio!>=14?'類比輸入／數位 I/O':'數位輸入／輸出'):'特殊用途，詳見提醒';
   if (pin.role === 'enable') return '晶片使能 / 重設';
   if (pin.role === 'power') return `${pin.silkscreen === '3V3' ? '3.3' : '5'} V 電源`;
   if (pin.role === 'ground') return '共同電位參考 / 接地';
@@ -41,6 +33,7 @@ export function functionFor(pin: Pin) {
   return '數位輸入 / 數位輸出';
 }
 export function descriptionFor(pin: Pin) {
+  if(pageBoardId==='uno-r3')return pin.role==='ground'?'三個主要排針 GND 電氣共地，各位置獨立選取。':pin.role==='power'?'供電端不是 GPIO；IOREF 為5V參考，VIN 為供電輸入。不可把不同電源直接互接。':pin.role==='gpio'?'UNO R3 採5V邏輯。數位腳 D0～D13，類比 A0～A5；ADC 0～1023。請核對模組供電及訊號相容性。':pin.restrictions;
   if (pin.category === 'reserved') return '這個接腳連接模組內部的 Flash 記憶體。可以查看資訊，但請勿連接外部元件或用作一般 GPIO，以免影響程式執行。';
   if (pin.category === 'input') return '這個接腳只能讀取訊號，不能驅動 LED。它沒有可由軟體啟用的內部上拉或下拉，實際接線需要合適的外部電路。';
   if (pin.role === 'power') return '這是電源接腳，不是 GPIO。Micro USB、5V 接腳與 3V3 接腳供電必須擇一，不可同時接入多組電源。';

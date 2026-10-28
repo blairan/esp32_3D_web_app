@@ -1,3 +1,4 @@
+import {pageBoardId} from '../boards/registry';
 import type {OledState} from '../program/peripheralTypes';
 import type {LessonId} from '../lessons';
 import { useEffect, useRef, useState } from 'react';
@@ -84,6 +85,8 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, side: THREE.DoubleSide }); materials.push(mat);
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat); mesh.position.set(x, y, z); model.add(mesh); return mesh;
     }
+    const details = new THREE.Group(); model.add(details);
+    if(pageBoardId==='esp32'){
     // Intentionally simplified teaching geometry. Exact mechanical dimensions remain unverified.
     box(27.9, 48.2, 1.3, 0, 0, 0, pcb);
     const surface=document.createElement('canvas');surface.width=512;surface.height=1024;const surfaceContext=surface.getContext('2d')!;
@@ -108,7 +111,6 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       box(2.1, 0.22, 0.06, -5.5 + i * 2.1, i % 2 ? 24.4 : 21.5, 1.55, gold);
       box(0.22, 2.9, 0.06, -4.45 + i * 2.1, 22.95, 1.55, gold);
     }
-    const details = new THREE.Group(); model.add(details);
     for (let i = 0; i < 18; i++) {
       const component = box(i % 3 ? 1.2 : 2.3, i % 3 ? 2.2 : 1.1, 0.7, -7.4 + (i % 6) * 2.9, -3.2 - Math.floor(i / 6) * 3.4, 1.05, i % 3 ? dark : silver);
       details.attach(component);
@@ -127,6 +129,20 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     const ledMaterial = new THREE.MeshStandardMaterial({ color: 0xeab960, emissive: 0x9f5512, emissiveIntensity: 0.45 }); materials.push(ledMaterial);
     box(1.2, 1.5, 0.7, -5.2, -16.7, 1, ledMaterial);
     label('PWR', 4, 1, -6.3, -14.9, 0.73, '#c9d2c7', 34);
+    }else{
+      const blue=new THREE.MeshStandardMaterial({color:0x235699,roughness:.7});materials.push(blue);
+      box(43,66,1.4,0,1,0,blue);
+      box(10,13,9,7,31,4.8,silver);box(7,1,6,7,37.6,4.8,dark);label('USB-B',10,2,7,22,1,'#ffffff');
+      box(9,12,7,-13,31,4,dark);label('DC IN',10,2,-13,22,1,'#ffffff');
+      box(9,29,3,3,-7,2.3,dark);label('ATmega328P',8,2.3,3,-7,3.85,'#ffffff');
+      for(let i=0;i<14;i++){box(1,1,1,8,-20+i*2,1.9,silver);box(1,1,1,-2,-20+i*2,1.9,silver);}
+      box(7,7,1.5,1,21,1.5,dark);label('16U2',7,2,1,21,2.3,'#ffffff');
+      box(5,4,2,15,34,1.7,silver);label('RESET',8,2,15,30,1,'#ffffff');
+      label('UNO R3',18,4,2,11,1,'#ffffff');label('5V / 16MHz',17,2,2,6,1,'#ffffff');
+      for(const [x,y] of [[7,-27],[5,27]]){box(6,5,2,x,y,1.7,dark);for(let i=0;i<6;i++)box(.6,.6,2,x-1.8+(i%3)*1.8,y-1+(i>=3?2:0),3,gold);}
+      label('ICSP (VIEW)',12,1.6,7,-32,1,'#ffffff');
+      for(let i=0;i<10;i++){const chip=box(1.5,2,1,-7+(i%3)*5,-2-Math.floor(i/3)*4,1.4,dark);details.attach(chip);}
+    }
     // Every physical pin has its own object, material and enlarged pick area.
     const hitboxes: THREE.Mesh[] = [];
     const pinMeshes = new Map<string, THREE.Mesh>();
@@ -137,7 +153,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       const shaft = box(0.68, 0.68, 5, pin.x, pin.y, 0.65, mat); pinMeshes.set(pin.pinId, shaft);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.14, 6, 16), gold); ring.position.set(pin.x, pin.y, 0.72); model.add(ring);
       const hitbox = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.35, 5.8), hitMat); hitbox.position.set(pin.x, pin.y, 1); hitbox.userData.pinId = pin.pinId; model.add(hitbox); hitboxes.push(hitbox);
-      label(pin.silkscreen, 3.7, 1.4, pin.x + (pin.header === 'J2' ? 2.8 : -2.8), pin.y, 0.74, '#e1e6db', 42);
+      label(pin.silkscreen, 3.7, 1.4, pin.x + (pin.x<0?2.8:-2.8), pin.y, 0.74, '#e1e6db', 42);
     }
     const highlightMat = new THREE.MeshBasicMaterial({ color: appearanceRef.current.accent, transparent: true, opacity: 0.9, depthTest: false }); materials.push(highlightMat);
     const highlight = new THREE.Mesh(new THREE.TorusGeometry(1.14, 0.25, 8, 32), highlightMat); highlight.renderOrder = 5; model.add(highlight);
@@ -167,7 +183,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     function reset() {
       defaultView=true;stopInertia();
       // Portrait framing adapts to a narrow canvas as well as the laptop layout.
-      const distance = lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (camera.aspect < 0.85 ? 125 : 105);
+      const distance = lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:pageBoardId==='uno-r3'?165:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (pageBoardId==='uno-r3'?145:camera.aspect < 0.85 ? 125 : 105);
       camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? (lessonId==='environment-lab'?38:22) : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='ultrasonic-alert'?-12:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
     }
     const select = (id: string) => {

@@ -13,12 +13,12 @@ export default function PinInspector({ pin }: { pin: Pin }) {
     <h3>接腳資訊</h3>
     <dl className="properties">
       <div><dt>接腳名稱</dt><dd>{titleFor(pin)}<span className="secondary">絲印：{pin.silkscreen}</span></dd></div>
-      <div><dt>所在位置</dt><dd><span className="mono">{pin.pinId}</span><span className="secondary">{pin.header === 'J2' ? '左排' : '右排'} · 由天線端往下第 {pin.position} 個</span></dd></div>
+      <div><dt>所在位置</dt><dd><span className="mono">{pin.pinId}</span><span className="secondary">{board.key==='uno-r3'?pin.header:pin.header === 'J2' ? '左排' : '右排'} · {board.key==='uno-r3'?'由USB端往下':'由天線端往下'}第 {pin.position} 個</span></dd></div>
       <div><dt>主要角色</dt><dd>{functionFor(pin)}</dd></div>
-      <div><dt>邏輯電壓</dt><dd>{pin.gpio !== null ? '3.3 V 邏輯' : pin.role === 'power' ? `${pin.silkscreen === '3V3' ? '3.3' : '5'} V 電源腳` : '非一般 GPIO'}</dd></div>
+      <div><dt>邏輯電壓</dt><dd>{pin.gpio !== null ? board.logicVoltage+' V 邏輯' : pin.role === 'power' ? (board.key==='uno-r3'?(pin.silkscreen==='VIN'?'VIN 供電輸入':pin.silkscreen==='IOREF'?'5 V 邏輯參考':`${pin.silkscreen==='3V3'?'3.3':'5'} V 電源腳`):`${pin.silkscreen === '3V3' ? '3.3' : '5'} V 電源腳`) : '非一般 GPIO'}</dd></div>
     </dl>
     <section className="pin-note"><h4>{pin.category === 'reserved' || pin.category === 'input' || pin.category === 'special' ? <TriangleAlert size={16} /> : null}使用提醒</h4><p>{descriptionFor(pin)}</p>{pin.restrictions && <p className="restriction">{pin.restrictions}</p>}</section>
-    {pin.gpio === 23 ? <div className="learning-note"><Lightbulb size={23}/><div><h4>從這裡開始</h4><p>GPIO23 是外接 LED 課程的接腳。開啟右上方「學習專題 → LED 接線」，就能學習電阻、極性與接線。</p><span>目前為接腳探索；LED 教學在另一個分頁操作。</span></div></div> : null}
+    {pin.gpio === (board.key==='uno-r3'?10:23) ? <div className="learning-note"><Lightbulb size={23}/><div><h4>從這裡開始</h4><p>{board.key==='uno-r3'?'D10':'GPIO23'} 是外接 LED 課程的接腳。開啟右上方「學習專題 → LED 接線」，就能學習電阻、極性與接線。</p><span>目前為接腳探索；LED 教學在另一個分頁操作。</span></div></div> : null}
     <a className="source-link" href={board.source} target="_blank" rel="noreferrer">查閱官方接腳文件 <ArrowUpRight size={14}/></a>
   </aside>;
 }

@@ -1,6 +1,11 @@
+import {pageBoardId} from '../boards/registry';
+import {readLesson} from '../lessons';
+import {unoArticle,unoOverview,unoDifferences} from '../uno/wiki';
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
 import {BookOpen,ArrowLeft,X,ArrowUpRight} from 'lucide-react';
-import {articles,articleById,type ArticleId} from './articles';
+import {articles as espArticles,articleById as espArticleById,type ArticleId} from './articles';
+const articles=pageBoardId==='uno-r3'?[unoOverview,unoDifferences,...espArticles]:espArticles;
+const articleById=new Map([...espArticleById,[unoOverview.id,unoOverview],[unoDifferences.id,unoDifferences]]);
 type OpenWiki=(id:ArticleId,origin?:HTMLElement)=>void;
 const WikiContext=createContext<OpenWiki>(()=>{});
 export function useWiki(){return useContext(WikiContext);}
@@ -11,7 +16,7 @@ export default function WikiProvider({children}:{children:ReactNode}){
  return <WikiContext.Provider value={open}>{children}{history.length?<WikiPanel history={history} onNavigate={id=>setHistory(value=>value.at(-1)===id?value:[...value,id])} onBack={()=>setHistory(value=>value.slice(0,-1))} onClose={close}/>:null}</WikiContext.Provider>;
 }
 function WikiPanel({history,onNavigate,onBack,onClose}:{history:ArticleId[];onNavigate:(id:ArticleId)=>void;onBack:()=>void;onClose:()=>void}){
- const dialog=useRef<HTMLDialogElement>(null),body=useRef<HTMLDivElement>(null),heading=useRef<HTMLHeadingElement>(null);const article=articleById.get(history.at(-1)!)!;
+ const dialog=useRef<HTMLDialogElement>(null),body=useRef<HTMLDivElement>(null),heading=useRef<HTMLHeadingElement>(null);const raw=articleById.get(history.at(-1)!)!;const article=pageBoardId==='uno-r3'&&!raw.id.startsWith('uno-')?unoArticle(raw,readLesson(new URLSearchParams(location.search).get('lesson'))):raw;
  useEffect(()=>{const node=dialog.current!;node.showModal();const overflow=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{node.close();document.body.style.overflow=overflow;};},[]);
  useEffect(()=>{body.current?.scrollTo(0,0);heading.current?.focus();},[article.id]);
  return <dialog className="wiki-dialog" ref={dialog} aria-labelledby="wiki-title" onCancel={event=>{event.preventDefault();onClose();}} onKeyDown={event=>{
@@ -25,7 +30,7 @@ function WikiPanel({history,onNavigate,onBack,onClose}:{history:ArticleId[];onNa
   <header className="wiki-header"><span><BookOpen size={19}/>教學 Wiki</span><div><button type="button" aria-label="返回上一篇" disabled={history.length<2} onClick={onBack}><ArrowLeft size={17}/>返回</button><button type="button" aria-label="關閉教學 Wiki" onClick={onClose}><X size={19}/></button></div></header>
   <div className="wiki-body" ref={body}>
    <details className="wiki-directory"><summary>文章目錄 · {articles.length} 個入門主題</summary><nav aria-label="Wiki 文章目錄">{articles.map(item=><button type="button" key={item.id} aria-current={item.id===article.id?'page':undefined} onClick={()=>onNavigate(item.id)}>{item.title}</button>)}</nav></details>
-   <article data-wiki-article={article.id}><p className="wiki-kicker">ESP32 入門筆記</p><h2 id="wiki-title" tabIndex={-1} ref={heading}>{article.title}</h2><p className="wiki-summary">{article.summary}</p>
+   <article data-wiki-article={article.id}><p className="wiki-kicker">{pageBoardId==='uno-r3'?'UNO R3':'ESP32'} 入門筆記</p><h2 id="wiki-title" tabIndex={-1} ref={heading}>{article.title}</h2><p className="wiki-summary">{article.summary}</p>
    {article.sections.map(section=><section key={section.title}><h3>{section.title}</h3><p>{section.text}</p></section>)}
    <section><h3>一個小例子</h3><pre><code>{article.example}</code></pre><p>{article.exampleNote}</p></section>
    <section><h3>常見錯誤</h3><ul>{article.mistakes.map(text=><li key={text}>{text}</li>)}</ul></section>
