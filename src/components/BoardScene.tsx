@@ -13,7 +13,7 @@ interface SceneProps {
   zoomCommand: { direction: 1 | -1; sequence: number } | null;
   onSelect: (id: string) => void;
   onButtonPress?:(down:boolean)=>void;accent:string;flow:boolean;reducedMotion:boolean;
-  lesson?: {id:LessonId;pressed:boolean;lit2:boolean;lit3:boolean;brightness:number;rgb:number[];potPosition:number; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
+  lesson?: {id:LessonId;pressed:boolean;lit2:boolean;lit3:boolean;brightness:number;rgb:number[];potPosition:number;lightPosition:number;servoAngle:number; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
 }
 export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion,onButtonPress }: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
@@ -167,7 +167,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       defaultView=true;stopInertia();
       // Portrait framing adapts to a narrow canvas as well as the laptop layout.
       const distance = lessonMode ? Math.min(300,Math.max((lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing')?100:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (camera.aspect < 0.85 ? 125 : 105);
-      camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? 22 : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='dual-led'?-7:0,0); controls.update(); requestRender();
+      camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? 22 : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
     }
     const select = (id: string) => {
       selectedPinId=id;
@@ -198,7 +198,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     api.current.simplify(currentSimple.current);
     if (lessonMode) {
       const circuit = createCircuitScene(lessonId); scene.add(circuit.group); hitboxes.push(...circuit.hitboxes); api.current.circuit = circuit;api.current.setEffects();
-      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending,value.pressed,value.lit2,value.lit3,value.brightness,value.rgb,value.potPosition); requestRender();
+      const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending,value.pressed,value.lit2,value.lit3,value.brightness,value.rgb,value.potPosition,value.lightPosition,value.servoAngle); requestRender();
     }
     const raycaster = new THREE.Raycaster();
     const activePointers = new Set<number>();
@@ -251,7 +251,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
   useEffect(() => { api.current?.reset(); }, [resetKey]);
   useEffect(() => { currentSimple.current = simple;appearanceRef.current.simple=simple; api.current?.simplify(simple);api.current?.setEffects(); }, [simple]);
   useEffect(() => { if (zoomCommand) api.current?.zoom(zoomCommand.direction); }, [zoomCommand]);
-  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed,lesson.lit2,lesson.lit3,lesson.brightness,lesson.rgb,lesson.potPosition);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
+  useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed,lesson.lit2,lesson.lit3,lesson.brightness,lesson.rgb,lesson.potPosition,lesson.lightPosition,lesson.servoAngle);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
   useEffect(()=>{appearanceRef.current={accent,flow,reducedMotion,simple};api.current?.setAccent(accent);},[accent,flow,reducedMotion,simple]);
   return <><div className="scene-host" ref={host} data-scene-status={status} />{status !== 'ready' && <div className="scene-message" role="status">{status === 'loading' ? '正在準備 3D 開發板…' : <><strong>目前無法顯示 3D 模型</strong><span>請確認瀏覽器支援 WebGL 並啟用硬體加速。你仍可使用下方清單探索全部接腳。</span><button onClick={() => setSceneVersion(version => version + 1)}>重試 3D 模型</button></>}</div>}</>;
 }

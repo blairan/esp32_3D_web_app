@@ -161,3 +161,10 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - `?lesson=pot-dimming#code`：GPIO34（J2-05）理想 ADC、六線範例、整數除以 16 轉 PWM；即時輸入與上次讀值分開。
 - 114 項測試、建置與兩課瀏覽器流程通過，Wiki 共 18 篇；原八課亦經載入／接線回歸。
 - 詳見 [rgb-pot-lessons.md](rgb-pot-lessons.md)。下一個最小步驟：試用兩課；光敏電阻夜燈尚未開始。
+
+### 2026-10-28：第十一、十二課完成
+
+- `?lesson=ldr-nightlight#code`：光阻＋10 kΩ 分壓、GPIO34 ADC、雙門檻遲滯夜燈，七線範例。
+- `?lesson=servo-angle#code`：外部 5V＋共地、GPIO23 訊號、單一 Servo 物件 attach／write，四線範例。
+- 126 項測試、正式建置與兩課瀏覽器流程通過；Wiki 共 20 篇；原十課亦經載入／接線回歸。
+- 詳見 [light-servo-lessons.md](light-servo-lessons.md)。下一個最小步驟：試用兩課；超音波測距尚未開始。

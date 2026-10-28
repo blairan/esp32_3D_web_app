@@ -1,0 +1,3 @@
+export default function ServoStatus({attached,angle,valid}:{attached:boolean;angle:number|null;valid:boolean}){
+ const active=attached&&valid&&angle!==null;return <section className="load-status" aria-label="伺服角度與控制狀態"><h3>伺服 · GPIO23 訊號</h3><p data-servo-active={String(active)} data-servo-angle={active?angle:'inactive'}>{active?`設定角度 ${angle}°`:'控制未啟用，模型回到 90° 示意初始位置'}</p><div className="servo-gauge" role="img" aria-label={active?`理想伺服角度 ${angle} 度`:'伺服未啟用'}><i style={{transform:`rotate(${(active?angle!:90)-90}deg)`}}/></div><p>{!valid?'請先完成訊號、外部供電及共地。':!attached?'程式先 attach(23)，再 write(angle)。':'控制已啟用；暫停保持角度，停止／重設清除控制。'}這是 0～180° 理想角度示意，不模擬轉速、負載、扭力或實物機械端點。</p><p>馬達採外部 5V 供電，與開發板 GND 共地；GPIO 僅接 SIG。實機需核對電源電流、伺服訊號與行程規格。</p></section>;
+}

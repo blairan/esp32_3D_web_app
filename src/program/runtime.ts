@@ -1,18 +1,19 @@
-import {lessons} from '../lessons.ts';
+import {lessons,hasADC} from '../lessons.ts';
 import { pins } from '../board.ts';
 import { limits, ProgramError } from './language.ts';
 import type { Program, Statement, Expression, SourceLocation, ProgramDiagnostic } from './language.ts';
 export type InputLevel='HIGH'|'LOW'|null;
-export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';duty?:number;line:number}
-export interface ProgramSnapshot {lastAnalogRead:number|null;variables:Record<string,number>;outputs:Record<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
+export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';duty?:number;angle?:number;line:number}
+export interface ProgramSnapshot {servo:{attached:boolean;angle:number|null};lastAnalogRead:number|null;variables:Record<string,number>;outputs:Record<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
 export type RunStatus='idle'|'starting'|'running'|'paused'|'stopped'|'error';
 export interface ProgramState extends ProgramSnapshot {status:RunStatus;diagnostic:ProgramDiagnostic|null}
-export const initialProgramState:ProgramState={lastAnalogRead:null,variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
+export const initialProgramState:ProgramState={servo:{attached:false,angle:null},lastAnalogRead:null,variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
 const gpioPins=new Map(pins.filter(pin=>pin.gpio!==null).map(pin=>[pin.gpio!,pin]));
 interface Frame {body:Statement[];pc:number;locals:Map<string,number>}
 export class ProgramRuntime {
  private program:Program;private globals=new Map<string,number>();private frames:Frame[]=[];
  private phase:'setup'|'loop'='setup';private time=0;private waitingUntil:number|null=null;private loopStart=0;
+ private servo={attached:false,angle:null as number|null};
  private analogInput:number|null=0;private lastAnalogRead:number|null=null;
  private outputs=new Map<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>();
  private outputEnabled=false;private inputEnabled=false;private input:InputLevel='HIGH';private lastRead:InputLevel=null;
@@ -22,7 +23,7 @@ export class ProgramRuntime {
  setAnalogInput(value:number|null){if(value!==null&&(!Number.isInteger(value)||value<0||value>4095))throw new ProgramError('ADC 輸入必須為 0～4095 或未確認狀態。',{line:1,column:1});this.analogInput=value;}
  setInput(input:InputLevel){this.input=input;}
  private value(expression:Expression):number {
-  if(expression.kind==='analog'){this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError('請先設定 pinMode(34, INPUT)，才能 analogRead。',expression.at);if(this.analogInput===null)throw new ProgramError('電位器供電或 ADC 接線無法判定。',expression.at);this.lastAnalogRead=this.analogInput;return this.analogInput;}
+  if(expression.kind==='analog'){this.checkPin(expression.pin,expression.at,'input');if(!this.inputEnabled)throw new ProgramError('請先設定 pinMode(34, INPUT)，才能 analogRead。',expression.at);if(this.analogInput===null)throw new ProgramError('感測器供電或 ADC 接線無法判定。',expression.at);this.lastAnalogRead=this.analogInput;return this.analogInput;}
   if(expression.kind==='millis')return this.time;
   if(expression.kind==='binary'){const left=this.value(expression.left),right=this.value(expression.right);if(expression.operator==='/'&&right===0)throw new ProgramError('整數除法不能除以零。',expression.at);const value=expression.operator==='+'?left+right:expression.operator==='-'?left-right:right===0?NaN:Math.trunc(left/right);if(!Number.isInteger(value)||value < -2147483648||value>2147483647)throw new ProgramError('整數算式超過 32 位元有號範圍。',expression.at);return value;}
   if(expression.kind==='integer')return expression.value;
@@ -45,14 +46,14 @@ export class ProgramRuntime {
   if(!pin)throw new ProgramError(`GPIO${gpio} 未知或未在這塊板引出。`,at);
   if(pin.category==='reserved')throw new ProgramError(`GPIO${gpio} 是 Flash 保留腳，禁止輸出。`,at);
   if(direction==='input'){
-   if(lessons[this.program.lessonId].inputGPIO===null||gpio!==lessons[this.program.lessonId].inputGPIO)throw new ProgramError(this.program.lessonId==='pot-dimming'?'本課僅支援 GPIO34 INPUT 作為 ADC。':'本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
+   if(lessons[this.program.lessonId].inputGPIO===null||gpio!==lessons[this.program.lessonId].inputGPIO)throw new ProgramError(hasADC(this.program.lessonId)?'本課僅支援 GPIO34 INPUT 作為 ADC。':'本課僅支援 GPIO18 的 INPUT_PULLUP 輸入。',at);
   }else{
    if(pin.category==='input')throw new ProgramError(`GPIO${gpio} 只能輸入，不能設定輸出或驅動 LED。`,at);
    if(!lessons[this.program.lessonId].outputGPIOs.includes(gpio))throw new ProgramError(`本課目前只支援 ${lessons[this.program.lessonId].outputGPIOs.map(pin=>'GPIO'+pin).join('、')} 輸出，GPIO${gpio} 尚未接入模擬。`,at);
   }
   return gpio;
  }
- snapshot():ProgramSnapshot{return {lastAnalogRead:this.lastAnalogRead,variables:Object.fromEntries(this.globals),outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
+ snapshot():ProgramSnapshot{return {servo:{...this.servo},lastAnalogRead:this.lastAnalogRead,variables:Object.fromEntries(this.globals),outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
  advanceTo(target:number):ProgramSnapshot {
   if(!Number.isSafeInteger(target)||target<this.time||target>limits.virtualTime)throw new ProgramError('虛擬時間超過上限，請重設後再執行。',this.program.loopAt);
   let tickOperations=0;const started=performance.now();
@@ -69,6 +70,8 @@ export class ProgramRuntime {
    const statement=frame.body[frame.pc++];this.line=statement.at.line;
    if(++tickOperations>limits.operationsPerTick||++this.operations>limits.totalOperations||performance.now()-started>20)throw new ProgramError('執行預算已用完，程式已停止。請增加 delay 或縮短程式。',statement.at);
    switch(statement.kind){
+    case 'servo-attach':{this.checkPin(statement.pin,statement.at);this.servo={attached:true,angle:90};break;}
+    case 'servo-write':{if(!this.servo.attached)throw new ProgramError('請先呼叫伺服物件的 attach(23)，才能 write。',statement.at);const angle=this.value(statement.angle);if(angle<0||angle>180)throw new ProgramError('伺服角度只接受 0 到 180 的整數；不接受微秒脈寬。',statement.at);this.servo.angle=angle;this.trace.push({gpio:23,timeMs:this.time,level:'HIGH',angle,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'assign':{let scope:Map<string,number>|undefined;for(let i=this.frames.length-1;i>=0;i--)if(this.frames[i].locals.has(statement.name)){scope=this.frames[i].locals;break;}scope??=this.globals.has(statement.name)?this.globals:undefined;if(!scope)throw new ProgramError(`未知變數「${statement.name}」，請先用 int 宣告。`,statement.at);scope.set(statement.name,this.value(statement.value));break;}
     case 'declare':this.declareVariable(statement,frame.locals);break;
     case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode!=='OUTPUT'?'input':'output');if(statement.mode!=='OUTPUT')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===23)this.outputEnabled=true;}break;}

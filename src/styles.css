@@ -90,3 +90,5 @@
 .load-status{padding:16px;margin:14px 0;border:1px solid var(--border);border-radius:8px;min-width:0}.load-status h3{font-size:18px}.load-status p{font-size:15px;line-height:1.8;margin:10px 0;overflow-wrap:anywhere}.load-status button{padding:10px 14px;border:1px solid var(--border);border-radius:6px}.brightness-meter{height:18px;background:var(--border);border-radius:20px;overflow:hidden}.brightness-meter i{display:block;height:100%;background:#e65c45}.duty-slider{display:grid;gap:12px;font-size:16px;margin-top:16px}.duty-slider input{width:100%;min-height:44px}
 
 .rgb-swatch{height:96px;border:1px solid var(--border);border-radius:10px;margin:12px 0}.rgb-channel{border-top:1px solid var(--border);padding:12px 0}.rgb-channel strong{font-size:16px}.rgb-channel label{display:grid;gap:8px;font-size:15px}.rgb-channel input{width:100%;min-height:44px}
+
+.servo-gauge{height:100px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:10px;margin:12px 0}.servo-gauge i{display:block;width:70px;height:8px;border-radius:6px;background:var(--accent,#3563e9);transform-origin:8px 4px}

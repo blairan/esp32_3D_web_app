@@ -17,18 +17,18 @@ export default function useProgramRunner(lessonId:LessonId='blink',input:InputLe
     try{
       const worker=new Worker(new URL('./program.worker.ts',import.meta.url),{type:'module'});workerRef.current=worker;
       const revision=revisionRef.current;
-      const fail=(message:string)=>{dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},variables:{},lastAnalogRead:null,level:'LOW',diagnostic:{message,line:1,column:1}});};
+      const fail=(message:string)=>{dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},servo:{attached:false,angle:null},variables:{},lastAnalogRead:null,level:'LOW',diagnostic:{message,line:1,column:1}});};
       watchdog.current=window.setTimeout(()=>{if(workerRef.current===worker)fail('執行器未回應，已安全停止。請重試。');},5000);
       worker.onmessage=({data}:MessageEvent<WorkerEvent>)=>{
         if(workerRef.current!==worker)return;
         if(data.revision!==revisionRef.current)return;
         if(watchdog.current!==null)window.clearTimeout(watchdog.current);watchdog.current=null;
-        if(data.type==='error'){dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},variables:{},lastAnalogRead:null,level:'LOW',line:data.diagnostic.line,diagnostic:data.diagnostic});return;}
+        if(data.type==='error'){dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},servo:{attached:false,angle:null},variables:{},lastAnalogRead:null,level:'LOW',line:data.diagnostic.line,diagnostic:data.diagnostic});return;}
         if(stateRef.current.status==='running'||stateRef.current.status==='starting')update({...data.snapshot,status:'running',diagnostic:null});
       };
       worker.onerror=event=>{event.preventDefault();if(workerRef.current===worker)fail('無法載入程式執行器。請確認瀏覽器支援 Worker，或重新載入頁面。');};
       const command:WorkerCommand={type:'start',source,revision,lessonId,input:inputRef.current,analogInput:analogRef.current};worker.postMessage(command);
-    }catch{dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},variables:{},lastAnalogRead:null,level:'LOW',diagnostic:{message:'這個瀏覽器無法啟動 Worker，請改用現行 Chrome 或 Edge。',line:1,column:1}});}
+    }catch{dispose();update({status:'error',inputEnabled:false,outputEnabled:false,outputs:{},servo:{attached:false,angle:null},variables:{},lastAnalogRead:null,level:'LOW',diagnostic:{message:'這個瀏覽器無法啟動 Worker，請改用現行 Chrome 或 Edge。',line:1,column:1}});}
   },[dispose,update,lessonId]);
   const pause=useCallback(()=>{
     if(stateRef.current.status!=='running'||!workerRef.current)return;
@@ -38,7 +38,7 @@ export default function useProgramRunner(lessonId:LessonId='blink',input:InputLe
     if(stateRef.current.status!=='paused'||!workerRef.current)return;
     const revision=++revisionRef.current;update({status:'running'});workerRef.current.postMessage({type:'resume',revision,input:inputRef.current,analogInput:analogRef.current} satisfies WorkerCommand);
   },[update]);
-  const stop=useCallback(()=>{dispose();update({status:'stopped',inputEnabled:false,outputEnabled:false,outputs:{},variables:{},lastAnalogRead:null,level:'LOW',line:0});},[dispose,update]);
+  const stop=useCallback(()=>{dispose();update({status:'stopped',inputEnabled:false,outputEnabled:false,outputs:{},servo:{attached:false,angle:null},variables:{},lastAnalogRead:null,level:'LOW',line:0});},[dispose,update]);
   const reset=useCallback(()=>{dispose();update(initialProgramState);},[dispose,update]);
   useEffect(()=>{workerRef.current?.postMessage({type:'input',revision:revisionRef.current,input} satisfies WorkerCommand);},[input]);
   useEffect(()=>{workerRef.current?.postMessage({type:'analog-input',revision:revisionRef.current,value:analogInput} satisfies WorkerCommand);},[analogInput]);

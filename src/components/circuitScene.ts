@@ -9,6 +9,8 @@ export const partPositions: Record<string, [number, number, number]> = {
   'led:a': [49, -1, 2], 'led:k': [59, -1, 2],
   'resistor2:a':[24.5,-16,2],'resistor2:b':[39.5,-16,2],'led2:a':[49,-25,2],'led2:k':[59,-25,2],
   'resistor3:a':[24.5,-40,2],'resistor3:b':[39.5,-40,2],'led3:a':[49,-49,2],'led3:k':[59,-49,2],
+  'ldr:a':[26,-14,2],'ldr:b':[44,-14,2],'divider:a':[26,-32,2],'divider:b':[44,-32,2],
+  'servo:s':[30,-17,2],'servo:vcc':[39,-17,2],'servo:gnd':[48,-17,2],'supply:plus':[30,18,2],'supply:minus':[46,18,2],
   'rgb:r':[49,-1,2],'rgb:g':[49,-25,2],'rgb:b':[49,-49,2],'rgb:k':[65,-25,2],
   'pot:vcc':[27,-10,2],'pot:w':[35.5,-10,2],'pot:gnd':[44,-10,2],
   'buzzer:s':[27,4,2],'buzzer:vcc':[35.5,4,2],'buzzer:gnd':[44,4,2],
@@ -40,13 +42,13 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   }
   function text(content:string,x:number,y:number,width:number,height=2) {
     const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
-    const context=canvas.getContext('2d')!;context.fillStyle='rgba(255,255,255,.92)';context.roundRect(16,8,480,112,24);context.fill();context.fillStyle='#43576b';context.textAlign='center';context.textBaseline='middle';context.font='600 80px Arial, sans-serif';context.fillText(content,256,64);
+    const context=canvas.getContext('2d')!;context.fillStyle='rgba(255,255,255,.92)';context.roundRect(16,8,480,112,24);context.fill();context.fillStyle='#43576b';context.textAlign='center';context.textBaseline='middle';context.font='600 80px Arial, sans-serif';let fontSize=80;while(context.measureText(content).width>440&&fontSize>24){fontSize-=2;context.font=`600 ${fontSize}px Arial, sans-serif`;}context.fillText(content,256,64);
     const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;textures.push(map);
     const material=new THREE.MeshBasicMaterial({map,transparent:true,depthWrite:false});materials.push(material);
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);mesh.position.set(x,y,1);group.add(mesh);
   }
   const ledVisuals:{material:THREE.MeshPhysicalMaterial;halo:THREE.Mesh;baseColor:number}[]=[];
-  for(let index=0;index<(lessonId==='buzzer-doorbell'?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
+  for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
     const offset=-24*index,baseColor=lessonId==='traffic-light'?[0xb81d32,0xe6ad15,0x249a51][index]:index?0x2864d5:0xb81d32;
     const ledMaterial=index?red.clone():red;if(index){ledMaterial.color.set(baseColor);materials.push(ledMaterial);}
     const resistorBody=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistorBody.rotation.z=Math.PI/2;resistorBody.position.set(32,8+offset,2);group.add(resistorBody);
@@ -67,6 +69,18 @@ export function createCircuitScene(lessonId:LessonId='blink') {
   const haloMaterial=new THREE.MeshBasicMaterial({color:baseColor,transparent:true,opacity:.14,depthWrite:false});materials.push(haloMaterial);
   const halo=new THREE.Mesh(new THREE.CircleGeometry(5.5,36),haloMaterial);halo.position.set(54,7+offset,0);group.add(halo);halo.visible=false;
     ledVisuals.push({material:ledMaterial,halo,baseColor});
+  }
+  let sensorMaterial:THREE.MeshStandardMaterial|null=null,servoHorn:THREE.Group|null=null;
+  if(lessonId==='ldr-nightlight'){
+   sensorMaterial=new THREE.MeshStandardMaterial({color:0xb6a387,roughness:.8});materials.push(sensorMaterial);const sensor=new THREE.Mesh(new THREE.CylinderGeometry(5.5,5.5,1.6,24),sensorMaterial);sensor.rotation.x=Math.PI/2;sensor.position.set(35,-6,2);group.add(sensor);
+   const traceMaterial=new THREE.MeshStandardMaterial({color:0x704323});materials.push(traceMaterial);tube([new THREE.Vector3(32,-8,3),new THREE.Vector3(32,-4,3),new THREE.Vector3(34,-4,3),new THREE.Vector3(34,-8,3),new THREE.Vector3(36,-8,3),new THREE.Vector3(36,-4,3),new THREE.Vector3(38,-4,3),new THREE.Vector3(38,-8,3)],traceMaterial,.25);
+   tube([terminalPosition('ldr:a')!,new THREE.Vector3(32,-9,1)],gray);tube([terminalPosition('ldr:b')!,new THREE.Vector3(38,-9,1)],gray);text('LDR',35,2,12,2.5);
+   const resistor=new THREE.Mesh(new THREE.CapsuleGeometry(1.5,5,6,20),beige);resistor.rotation.z=Math.PI/2;resistor.position.set(35,-26,2);group.add(resistor);tube([terminalPosition('divider:a')!,new THREE.Vector3(30,-26,2),new THREE.Vector3(40,-26,2),terminalPosition('divider:b')!],gray);text('10 kΩ',35,-21,14,2.5);for(const [i,color] of [0x785030,0x222222,0xe48622,0xbb9a43].entries()){const band=new THREE.MeshStandardMaterial({color});materials.push(band);cylinder(1.53,.6,32.4+i*1.8,-26,2,band,true);}
+  }
+  if(lessonId==='servo-angle'){
+   const bodyMaterial=new THREE.MeshStandardMaterial({color:0x275498,roughness:.4});materials.push(bodyMaterial);const housing=new THREE.Mesh(new THREE.BoxGeometry(22,16,8),bodyMaterial);housing.position.set(40,-2,3);group.add(housing);
+   const white=new THREE.MeshStandardMaterial({color:0xe5e9ee,roughness:.5});materials.push(white);servoHorn=new THREE.Group();servoHorn.position.set(40,-2,8);const hub=new THREE.Mesh(new THREE.CylinderGeometry(2,2,1,24),white);hub.rotation.x=Math.PI/2;servoHorn.add(hub);const arm=new THREE.Mesh(new THREE.BoxGeometry(12,2,1),white);arm.position.x=5;servoHorn.add(arm);group.add(servoHorn);text('SERVO',40,12,18,3);
+   const sourceMaterial=new THREE.MeshStandardMaterial({color:0x596578,roughness:.6});materials.push(sourceMaterial);const source=new THREE.Mesh(new THREE.BoxGeometry(22,9,3),sourceMaterial);source.position.set(38,26,2);group.add(source);text('EXTERNAL 5V',38,33,24,2.5);for(const id of ['servo:s','servo:vcc','servo:gnd','supply:plus','supply:minus']){const pos=terminalPosition(id)!;tube([pos,new THREE.Vector3(pos.x,id.startsWith('servo:')?-10:22,2)],gray);}for(const [id,label] of [['servo:s','SIG'],['servo:vcc','VCC'],['servo:gnd','GND'],['supply:plus','+5V'],['supply:minus','GND']]){const pos=terminalPosition(id)!;text(label,pos.x,pos.y-3,6);}
   }
   let rgbMaterial:THREE.MeshPhysicalMaterial|null=null,rgbHalo:THREE.Mesh|null=null,potKnob:THREE.Mesh|null=null;
   if(lessonId==='rgb-mixing'){
@@ -132,7 +146,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     },
     needsAnimation(){return enabled&&(lit||lit2||lit3)&&playing&&!reducedMotion&&!simple&&flowItems.some(item=>item.active);},
     animate(delta:number){if(this.needsAnimation()){phase=(phase+delta*.45)%1;positionFlow();}},
-    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048){
+    update(wires:CircuitWire[],nextLit:boolean,pending:string|null,pressed=false,nextLit2=false,nextLit3=false,brightness=1,rgb:number[]=[0,0,0],potPosition=2048,lightPosition=3072,servoAngle=90){
       if(wires!==previousWires){
         clearWires();previousWires=wires;
         wires.forEach((wire,index)=>{
@@ -143,13 +157,15 @@ export function createCircuitScene(lessonId:LessonId='blink') {
           const material=new THREE.MeshStandardMaterial({color:wireColor(wire),roughness:.32});
           const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,32,.3,8,false),material);group.add(mesh);wireMeshes.push(mesh);addFlow('wire:'+wire.id,curve,wire.from);
         });
-        for(let index=0;index<(lessonId==='buzzer-doorbell'?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
+        for(let index=0;index<((lessonId==='buzzer-doorbell'||lessonId==='servo-angle')?0:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?3:lessonId==='dual-led'?2:1);index++){
           const offset=-24*index,r=index?'resistor'+(index+1):'resistor',l=index?'led'+(index+1):'led';
           addFlow('resistor:'+r,new THREE.CatmullRomCurve3([new THREE.Vector3(24.5,8+offset,2),new THREE.Vector3(32,8+offset,4),new THREE.Vector3(39.5,8+offset,2)]),r+':a');
           if(lessonId==='rgb-mixing'){const anode=['rgb:r','rgb:g','rgb:b'][index];addFlow('led:rgb-'+index,new THREE.CatmullRomCurve3([terminalPosition(anode)!,new THREE.Vector3(57,-15,6),terminalPosition('rgb:k')!]),anode);continue;}
           addFlow('led:'+l,new THREE.CatmullRomCurve3([new THREE.Vector3(49,-1+offset,2),new THREE.Vector3(52.4,5+offset,2),new THREE.Vector3(54,7+offset,5),new THREE.Vector3(55.5,5+offset,2),new THREE.Vector3(59,-1+offset,2)]),l+':a');
         }
       }
+      if(sensorMaterial)sensorMaterial.color.setRGB(.3+.5*lightPosition/4095,.24+.45*lightPosition/4095,.16+.4*lightPosition/4095);
+      if(servoHorn)servoHorn.rotation.z=((nextLit?servoAngle:90)-90)*Math.PI/180;
       if(rgbMaterial&&rgbHalo){const on=rgb.some(v=>v>0);const color=new THREE.Color(`rgb(${rgb.join(',')})`);rgbMaterial.color.copy(on?color:new THREE.Color(0x80909e));rgbMaterial.emissive.copy(color);rgbMaterial.emissiveIntensity=on?.8:0;(rgbHalo.material as THREE.MeshBasicMaterial).color.copy(color);rgbHalo.visible=on;}
       if(potKnob)potKnob.rotation.z=(potPosition/4095-.5)*Math.PI*1.5;
       if(buzzerRing)buzzerRing.visible=nextLit;
