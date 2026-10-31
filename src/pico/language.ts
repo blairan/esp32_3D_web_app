@@ -9,7 +9,7 @@ export const picoAnswer=`from machine import Pin\nimport time\n\nled = Pin("LED"
 // This is a deliberately small grammar, not a Python/JavaScript interpreter.
 // Strip only comments outside strings; do not execute or rewrite learner code.
 function withoutComment(line:string){let quote='';for(let i=0;i<line.length;i++){const c=line[i];if(quote){if(c==='\\')i++;else if(c===quote)quote='';}else if(c==='"'||c==="'")quote=c;else if(c==='#')return line.slice(0,i);}return line;}
-const forbidden=new Set(['Pin','time','while','True','False','None','from','import','pass','print','exec','eval','open','__import__','for','if','else','class','def','return','try','except','break','continue','with','as','lambda','global','nonlocal','async','await','and','or','not','in','is','del','assert','raise','yield']);
+const forbidden=new Set(['Pin','time','while','True','False','None','from','import','pass','print','exec','eval','open','__import__','for','if','elif','else','finally','class','def','return','try','except','break','continue','with','as','lambda','global','nonlocal','async','await','and','or','not','in','is','del','assert','raise','yield']);
 export function parsePython(source:string):PythonProgram {
  if(source.length>12000||source.split('\n').length>400)throw new PythonError('程式最多12000字元、400行。',1);
  const setup:PythonStep[]=[],loop:PythonStep[]=[];let pinImport=false,timeImport=false,name='',inLoop=false,loopLine=1;let count=0;

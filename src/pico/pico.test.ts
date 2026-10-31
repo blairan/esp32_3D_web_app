@@ -30,7 +30,7 @@ test('indentation, tabs and syntax errors report original line and column',()=>{
  rejects(program('\tled.on()\n\ttime.sleep(1)'),/4個空白/);rejects(picoAnswer.replace('while True:','while True'),/語法不完整/);
 });
 test('wrong board LED mapping and uninitialized / mismatched objects are diagnosed',()=>{
- rejects(picoAnswer.replace('"LED"','25'),/GPIO25/);rejects(picoAnswer.replace('led.on()','lamp.on()'),/物件名稱/);rejects(picoAnswer.replace('from machine import Pin\n',''),/先/);rejects(picoAnswer.replace('led =','time ='),/保留字/);
+ rejects(picoAnswer.replace('"LED"','25'),/GPIO25/);rejects(picoAnswer.replace('led.on()','lamp.on()'),/物件名稱/);rejects(picoAnswer.replace('from machine import Pin\n',''),/先/);const keywords=JSON.parse(spawnSync('python3',['-c','import json,keyword;print(json.dumps(keyword.kwlist))'],{encoding:'utf8'}).stdout) as string[];for(const name of ['time','Pin',...keywords])rejects(picoAnswer.replace('led =',name+' ='),/保留字/);
 });
 test('arbitrary Python, other imports, assignments, nested loops, branches and external GPIO are rejected',()=>{
  for(const body of ['    exec("print(1)")','    eval("1")','    __import__("os")','    import os','    for i in range(2):','    while True:','    if True:','    count = 1','    led.value(2)','    led.value(1); led.off()'])rejects(program(body+'\n    time.sleep(1)'),/支援|縮排/);
