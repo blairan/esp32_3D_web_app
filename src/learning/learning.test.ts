@@ -28,6 +28,8 @@ test('all 36 Arduino introductions have their own goal, phenomenon, materials an
  assert.match(arduinoGuide('blink').goal,/GPIO23/);
  assert.ok(!arduinoGuide('ultrasonic-alert',true).parts.some(p=>/分壓/.test(p)));
  assert.ok(arduinoGuide('ultrasonic-alert').parts.some(p=>/分壓/.test(p)));
+ for(const id of ['ultrasonic-alert','pir-delay'] as const)assert.ok(!arduinoGuide(id,true).parts.includes('外部 5V 電源'));
+ assert.ok(arduinoGuide('servo-angle',true).parts.includes('外部 5V 電源'));
  assert.ok(arduinoGuide('seven-counter').parts.includes('TM1637 四位數顯示器'));
 });
 test('the new manual palette is a default, existing background and accent selections survive',()=>{
