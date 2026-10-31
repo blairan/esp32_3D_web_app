@@ -8,7 +8,7 @@ export class ProgramError extends Error {
   constructor(message:string, at:SourceLocation) {super(message);this.name='ProgramError';this.line=at.line;this.column=at.column;}
 }
 export const limits = { source:12000, lines:400, tokens:4000, statements:256, delay:60000, operationsPerTick:500, totalOperations:100000, virtualTime:86400000 } as const;
-interface Token extends SourceLocation { text:string; kind:'name'|'string'|'integer'|'punctuation'|'end' }
+export interface Token extends SourceLocation { start:number; end:number; text:string; kind:'name'|'string'|'integer'|'punctuation'|'end' }
 export type Expression = {kind:'dht-read';humidity:boolean;at:SourceLocation}| {kind:'pulse';pin:Expression;timeout:Expression;at:SourceLocation}| {kind:'analog';pin:Expression;at:SourceLocation}| {kind:'millis';at:SourceLocation}|{kind:'binary';left:Expression;right:Expression;operator:'+'|'-'|'/';at:SourceLocation}| {kind:'integer';value:number;at:SourceLocation}|{kind:'variable';name:string;at:SourceLocation}|{kind:'read';pin:Expression;at:SourceLocation};
 export type Statement =
  | {kind:'dht-begin';at:SourceLocation}
@@ -24,19 +24,19 @@ export type Statement =
  | {kind:'microdelay';duration:Expression;at:SourceLocation}
  | {kind:'delay';duration:Expression;at:SourceLocation}
  | {kind:'if';left:Expression;right:Expression;operator:'=='|'!='|'>'|'<'|'>='|'<=';then:Statement[];otherwise:Statement[];at:SourceLocation};
-export interface Program { boardId:BoardId;lessonId:LessonId;servoName?:string;dht?:{name:string;pin:Expression};oledName?:string;globals:Extract<Statement,{kind:'declare'}>[];setup:Statement[];loop:Statement[];loopAt:SourceLocation }
+export interface Program { boardId:BoardId;lessonId:LessonId;servoName?:string;dht?:{name:string;pin:Expression};oledName?:string;digitsName?:string;globals:Extract<Statement,{kind:'declare'}>[];setup:Statement[];loop:Statement[];loopAt:SourceLocation }
 const reserved=new Set(['A0','A1','A2','A3','A4','A5','TM1637Display','DHT','DHT22','Adafruit_SSD1306','Wire','SSD1306_SWITCHCAPVCC','SSD1306_WHITE','pulseIn','delayMicroseconds','Servo','analogRead','analogWrite','millis','int','void','setup','loop','pinMode','digitalWrite','digitalRead','delay','OUTPUT','HIGH','LOW','INPUT','INPUT_PULLUP','INPUT_PULLDOWN','const','for','while','if','else','do','return','break','continue','switch','case','default','bool','char','float','double','long','short','signed','unsigned','auto','true','false','class','struct','enum','namespace','using','new','delete','this','sizeof','static','volatile','void','public','private','protected','try','catch','throw','template','typedef','union','extern','inline','operator','virtual','nullptr']);
-function tokenize(source:string,allowStrings=false):Token[] {
+export function tokenizeSource(source:string,allowStrings=false):Token[] {
   if(source.length>limits.source)throw new ProgramError(`程式最多 ${limits.source} 個字元。`,{line:1,column:1});
   if(source.split('\n').length>limits.lines)throw new ProgramError(`程式最多 ${limits.lines} 行。`,{line:limits.lines+1,column:1});
   const tokens:Token[]=[];let index=0,line=1,column=1;
   const step=()=>{const c=source[index++];if(c==='\n'){line++;column=1;}else column++;return c;};
-  const add=(text:string,kind:Token['kind'],at:SourceLocation)=>{
-    tokens.push({text,kind,...at});if(tokens.length>limits.tokens)throw new ProgramError('程式過長，請縮短範例。',at);
+  const add=(text:string,kind:Token['kind'],at:SourceLocation & {start:number})=>{
+    tokens.push({text,kind,...at,end:index});if(tokens.length>limits.tokens)throw new ProgramError('程式過長，請縮短範例。',at);
   };
   while(index<source.length) {
     if(/\s/.test(source[index])){step();continue;}
-    const at={line,column};
+    const at={line,column,start:index};
     if(source.startsWith('//',index)){while(index<source.length&&source[index]!=='\n')step();continue;}
     if(source.startsWith('/*',index)){
       step();step();while(index<source.length&&!source.startsWith('*/',index))step();
@@ -54,12 +54,12 @@ function tokenize(source:string,allowStrings=false):Token[] {
     if('(){};,=-+<>/.&'.includes(source[index])){add(step(),'punctuation',at);continue;}
     throw new ProgramError(source[index]==='#'?'本課不支援 #include、#define 或其他前置處理指令。':`不支援符號「${source[index]}」。僅接受白名單 Arduino 語法。`,at);
   }
-  tokens.push({text:'',kind:'end',line,column});return tokens;
+  tokens.push({text:'',kind:'end',line,column,start:index,end:index});return tokens;
 }
 export function parseProgram(source:string,lessonId:LessonId='blink',boardId:BoardId='esp32'):Program {
   const profile=lessonPins(boardId,lessonId);getBoard(boardId);
   const advanced=hasExtendedSyntax(lessonId);
-  const tokens=tokenize(source,(lessonId==='oled-i2c'||lessonId==='environment-lab'));let index=0,count=0;let digitsName:string|undefined;let servoName:string|undefined,oledName:string|undefined,dht:{name:string;pin:Expression}|undefined;
+  const tokens=tokenizeSource(source,(lessonId==='oled-i2c'||lessonId==='environment-lab'));let index=0,count=0;let digitsName:string|undefined;let servoName:string|undefined,oledName:string|undefined,dht:{name:string;pin:Expression}|undefined;
   const peek=()=>tokens[index];const take=()=>tokens[index++];
   const is=(text:string)=>peek().kind!=='string'&&peek().text===text;
   const expect=(text:string)=>{const token=take();if(token.kind==='string'||token.text!==text)throw new ProgramError(`預期「${text}」${token.kind==='end'?'，但程式已結束。':`，目前是「${token.text}」。`}`,token);return token;};
@@ -158,7 +158,7 @@ export function parseProgram(source:string,lessonId:LessonId='blink',boardId:Boa
     expect('}');functions.set(name.text,body);
   }
   if(!functions.has('setup')||!functions.has('loop'))throw new ProgramError('需要同時定義 void setup() 與 void loop()。',peek());
-  return {boardId,lessonId,servoName,dht,oledName,globals,setup:functions.get('setup')!,loop:functions.get('loop')!,loopAt};
+  return {boardId,lessonId,servoName,dht,oledName,digitsName,globals,setup:functions.get('setup')!,loop:functions.get('loop')!,loopAt};
 }
 export const blinkExample = `// GPIO23 → 220 Ω → LED → GND
 int ledPin = 23;

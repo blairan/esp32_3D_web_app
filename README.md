@@ -90,3 +90,9 @@ UNO使用5V邏輯、10位ADC、原生D／A接腳與A4／A5 I²C；18課都有接
 ## 練習保存與換電腦接續
 
 每塊板、每課自動保存程式、接線、範例備份與輸入設定。重新整理還原草稿，重開首頁接續上次保存的板型／課程，保持未執行狀態。標題下方按「匯出練習」下載目前課程JSON；在另一台電腦開網站按「匯入練習」，確認後載入對應板型／課程。沒有登入或雲端同步，清除瀏覽器資料會刪除本機草稿，請按需匯出備份。193項測試與建置通過；細節見 [保存契約與驗證](docs/practice-storage.md)。
+
+## 匯出到 Arduino IDE
+
+標題下方「匯出 Arduino 程式（.ino）」可預覽並下載目前自己寫的 UNO／ESP32 程式，包含課程所需標頭、實板適配差異、板型與函式庫版本。原 `.json` 匯出／匯入仍用於恢復平台練習。網站不編譯或直接燒錄，請用 Arduino IDE 選板型與連接埠，先驗證再上傳。
+
+驗證：`npm run test:hardware-runtime`；安裝 Arduino CLI 後，`npm run compile:sketches -- uno-r3 --install` 與 `npm run compile:sketches -- esp32 --install` 各編譯18課。固定版本、行為與硬體限制見 [Arduino 匯出說明](docs/arduino-export.md)。
