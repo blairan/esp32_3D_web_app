@@ -1,3 +1,5 @@
+import {createPicoCircuitScene} from '../pico/circuitScene';
+import type {PicoView} from '../pico/types';
 import {picoBoard,picoPins,picoPinById} from '../pico/board';
 import {pageBoardId} from '../boards/registry';
 import type {OledState} from '../program/peripheralTypes';
@@ -12,7 +14,7 @@ import { createCircuitScene } from './circuitScene';
 import type { CircuitWire } from '../circuit';
 
 interface SceneProps {
-  pico?: {lit:boolean};
+  pico?: PicoView;
   selectedId: string; resetKey: number; simple: boolean;
   zoomCommand: { direction: 1 | -1; sequence: number } | null;
   onSelect: (id: string) => void;
@@ -20,9 +22,10 @@ interface SceneProps {
   lesson?: {id:LessonId;pressed:boolean;lit2:boolean;lit3:boolean;brightness:number;rgb:number[];potPosition:number;lightPosition:number;servoAngle:number;motion:boolean;oled:OledState; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
 }
 export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion,onButtonPress }: SceneProps) {
-  const isPico=Boolean(pico),picoLit=useRef(pico?.lit??false);picoLit.current=pico?.lit??false;
+  const picoCurrent=useRef(pico);picoCurrent.current=pico;const picoLesson=pico?.external?.id;
+  const isPico=Boolean(pico),picoLit=useRef(pico?.lit??false);picoLit.current=pico?.external?false:pico?.lit??false;
   const host = useRef<HTMLDivElement>(null);
-  const api = useRef<{ setPicoLed:(lit:boolean)=>void; select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void; setAccent:(value:string)=>void;setEffects:()=>void;circuit?: ReturnType<typeof createCircuitScene> } | null>(null);
+  const api = useRef<{ setPicoLed:(lit:boolean)=>void; select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void; setAccent:(value:string)=>void;setEffects:()=>void;picoCircuit?:ReturnType<typeof createPicoCircuitScene>;circuit?: ReturnType<typeof createCircuitScene> } | null>(null);
   const pressCallback=useRef(onButtonPress);pressCallback.current=onButtonPress;
   const selectCallback = useRef(onSelect);
   const initialSelected = useRef(selectedId);
@@ -60,7 +63,7 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
     controls.screenSpacePanning = true;
     controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
     controls.minDistance = lessonMode ? 75 : 58;
-    controls.maxDistance = lessonMode ? 320 : 190;
+    controls.maxDistance = lessonMode||picoLesson ? 340 : 190;
     controls.rotateSpeed = 0.65;
     controls.zoomSpeed = 0.8;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x59676c, 1.9));
@@ -181,7 +184,7 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
     controls.addEventListener('start',()=>{defaultView=false;});
     function render(now:number) {
       frame=0;if(!alive||!contextAvailable||document.hidden)return;
-      const circuit=api.current?.circuit,animating=circuit?.needsAnimation()??false;
+      const circuit=api.current?.picoCircuit??api.current?.circuit,animating=circuit?.needsAnimation()??false;
       // Decorative flow is capped at 30 fps; direct camera interaction stays responsive.
       if(animating&&!dirty&&now-lastDraw<1000/30){frame=requestAnimationFrame(render);return;}
       dirty=false;controls.update();circuit?.animate(lastDraw?Math.min((now-lastDraw)/1000,.1):0);renderer.render(scene,camera);lastDraw=now;
@@ -200,8 +203,8 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
     function reset() {
       defaultView=true;stopInertia();
       // Portrait framing adapts to a narrow canvas as well as the laptop layout.
-      const distance = lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:pageBoardId==='uno-r3'?165:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (isPico?Math.max(145,48/(2*Math.tan(33*Math.PI/360)*camera.aspect)):pageBoardId==='uno-r3'?145:camera.aspect < 0.85 ? 125 : 105);
-      camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? (lessonId==='environment-lab'?38:22) : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='ultrasonic-alert'?-12:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
+      const distance = picoLesson?Math.max(205,112/(2*Math.tan(33*Math.PI/360)*camera.aspect)):lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:pageBoardId==='uno-r3'?165:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (isPico?Math.max(145,48/(2*Math.tan(33*Math.PI/360)*camera.aspect)):pageBoardId==='uno-r3'?145:camera.aspect < 0.85 ? 125 : 105);
+      camera.position.set(picoLesson?32:lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(picoLesson?20:lessonMode ? (lessonId==='environment-lab'?38:22) : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='ultrasonic-alert'?-12:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
     }
     const select = (id: string) => {
       selectedPinId=id;
@@ -221,7 +224,7 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
     const observer = new ResizeObserver(resize); observer.observe(container); resize(); reset(); select(initialSelected.current);
     api.current = { select, reset, setPicoLed(lit){if(picoLed){picoLed.color.set(lit?0xffbe46:0x79776d);picoLed.emissive.set(lit?0xffa020:0x000000);requestRender();}},
       setAccent(value){selectedAccent=value;highlightMat.color.set(value);glowMat.color.set(value);this.setEffects();select(selectedPinId);},
-      setEffects(){const options=appearanceRef.current;controls.enableDamping=!options.reducedMotion;this.circuit?.configure({...options,enabled:options.flow,playing:currentLesson.current?.playing??true});requestRender();},
+      setEffects(){const options=appearanceRef.current;controls.enableDamping=!options.reducedMotion;this.circuit?.configure({...options,enabled:options.flow,playing:currentLesson.current?.playing??true});this.picoCircuit?.configure({...options,enabled:options.flow,playing:picoCurrent.current?.external?.playing??false});requestRender();},
       zoom(direction) {
       defaultView=false;stopInertia();
       const offset = camera.position.clone().sub(controls.target);
@@ -234,6 +237,7 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
       const circuit = createCircuitScene(lessonId); scene.add(circuit.group); hitboxes.push(...circuit.hitboxes); api.current.circuit = circuit;api.current.setEffects();
       const value = currentLesson.current!; circuit.update(value.wires, value.lit, value.pending,value.pressed,value.lit2,value.lit3,value.brightness,value.rgb,value.potPosition,value.lightPosition,value.servoAngle,value.motion,value.oled); requestRender();
     }
+    if(picoLesson){const circuit=createPicoCircuitScene(picoLesson);scene.add(circuit.group);hitboxes.push(...circuit.hitboxes);api.current.picoCircuit=circuit;circuit.update(picoCurrent.current!);api.current.setEffects();requestRender();}
     const raycaster = new THREE.Raycaster();
     const activePointers = new Set<number>();
     let down: { x: number; y: number; id: number; moved: boolean; multi: boolean;press:boolean } | null = null;
@@ -264,7 +268,7 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
       if (hit&&hit.object.userData.pinId!=='button:press') selectCallback.current(hit.object.userData.pinId as string);
     };
     const cancel = (e: PointerEvent) => { activePointers.delete(e.pointerId); down = null;pressCallback.current?.(false);controls.enabled=true; };
-    const contextLost = (e: Event) => { e.preventDefault(); contextAvailable = false; cancelAnimationFrame(frame); frame = 0; setStatus('error'); };
+    const contextLost = (e: Event) => { e.preventDefault();pressCallback.current?.(false);controls.enabled=true;down=null;activePointers.clear(); contextAvailable = false; cancelAnimationFrame(frame); frame = 0; setStatus('error'); };
     const releasePress=()=>{down=null;activePointers.clear();pressCallback.current?.(false);controls.enabled=true;};window.addEventListener('blur',releasePress);
     const visibility=()=>{if(document.hidden){releasePress();cancelAnimationFrame(frame);frame=0;}else requestRender();};document.addEventListener('visibilitychange',visibility);
     canvas.addEventListener('pointerdown', pointerDown,true);
@@ -274,19 +278,19 @@ export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCom
     canvas.addEventListener('webglcontextlost', contextLost);
     setStatus('ready');
     return () => {
-      alive = false; cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',visibility); observer.disconnect(); controls.dispose(); api.current?.circuit?.dispose(); api.current = null;
+      alive = false; cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',visibility); observer.disconnect(); controls.dispose(); api.current?.circuit?.dispose();api.current?.picoCircuit?.dispose(); api.current = null;
       window.removeEventListener('blur',releasePress);canvas.removeEventListener('pointerdown', pointerDown,true); canvas.removeEventListener('pointermove', pointerMove);
       canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('pointercancel', cancel);canvas.removeEventListener('lostpointercapture',cancel); canvas.removeEventListener('webglcontextlost', contextLost);
       scene.traverse(obj => { if (obj instanceof THREE.Mesh) obj.geometry.dispose(); });
       materials.forEach(mat => mat.dispose()); textures.forEach(texture => texture.dispose()); environment?.dispose();renderer.dispose(); if (contextAvailable) renderer.forceContextLoss(); canvas.remove();
     };
-  }, [sceneVersion, lessonMode,lessonId,isPico]);
+  }, [sceneVersion, lessonMode,lessonId,isPico,picoLesson]);
   useEffect(() => { initialSelected.current = selectedId; api.current?.select(selectedId); }, [selectedId]);
   useEffect(() => { api.current?.reset(); }, [resetKey]);
   useEffect(() => { currentSimple.current = simple;appearanceRef.current.simple=simple; api.current?.simplify(simple);api.current?.setEffects(); }, [simple]);
   useEffect(() => { if (zoomCommand) api.current?.zoom(zoomCommand.direction); }, [zoomCommand]);
   useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed,lesson.lit2,lesson.lit3,lesson.brightness,lesson.rgb,lesson.potPosition,lesson.lightPosition,lesson.servoAngle,lesson.motion,lesson.oled);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
   useEffect(()=>{appearanceRef.current={accent,flow,reducedMotion,simple};api.current?.setAccent(accent);},[accent,flow,reducedMotion,simple]);
-  useEffect(()=>{api.current?.setPicoLed(pico?.lit??false);},[pico?.lit]);
+  useEffect(()=>{api.current?.setPicoLed(pico?.external?false:pico?.lit??false);if(pico)api.current?.picoCircuit?.update(pico);api.current?.setEffects();},[pico]);
   return <><div className="scene-host" ref={host} data-scene-status={status} />{status !== 'ready' && <div className="scene-message" role="status">{status === 'loading' ? '正在準備 3D 開發板…' : <><strong>目前無法顯示 3D 模型</strong><span>請確認瀏覽器支援 WebGL 並啟用硬體加速。你仍可使用下方清單探索全部接腳。</span><button onClick={() => setSceneVersion(version => version + 1)}>重試 3D 模型</button></>}</div>}</>;
 }

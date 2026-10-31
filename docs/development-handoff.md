@@ -220,3 +220,10 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - 獨立Python編輯器、補全、4篇Wiki、可展開答案、受限語法Worker、執行／暫停／停止／重設、3D LED、當前程式main.py預覽下載與Pico JSON保存。UNO／ESP32 Arduino各18課及.ino功能保留；Pico不冒用Arduino匯出器。
 - 259項單元測試、既有12項產生碼C++行為測試、建置、桌面／320及390px、真實raycast、Wiki／匯出狀態保留、檔案保存與板型切換、WebGL重試及Arduino瀏覽器回歸通過。沿既有Pages gate發布。
 - 下一步為使用者試用首課與實板Thonny驗證；外接LED、按鈕及PWM尚未加入，不宣稱完整MicroPython或硬體驗收通過。
+
+### 2026-10-31：Pico 第2、3課完成
+
+- 新增 external-led（GP15／實體20與220 Ω外接LED）、button-led（GP14／實體19 PULL_UP按鈕控制GP15）。Pico現有3課、6篇Wiki；PWM未開始。
+- 3D元件及端點接線、範例顯示／還原、錯接診斷、有效電流方向、按鈕即時／上次取樣、單層if／else、補全、標準答案、當前程式main.py下載與分課JSON保存完成。舊blink草稿鍵與JSON相容，跨課匯入不被離開保存覆蓋。
+- 279項單元測試、既有12項產生後C++行為檢查、建置、兩課桌面／手機及真實3D接線／按鈕流程、原板載LED與Arduino瀏覽器回歸通過。詳見 [Pico外接與按鈕課](pico-external-button.md)。沿既有Pages及兩板36份編譯gate發布。
+- 下一個最小步驟為使用者試用與實板核對；後續可加PWM呼吸燈。本輪未執行實體接線、燒錄或Acer效能驗收。

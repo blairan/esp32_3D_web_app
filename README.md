@@ -1,6 +1,6 @@
 # ESP32 Interactive Lab
 
-繁體中文瀏覽器 3D 教學實驗室，支援 **ESP32-DevKitC V4／WROOM-32E（38 Pin）** 與 **Arduino UNO R3／ATmega328P（32個主要排針端點）**；ESP32／UNO各有18項Arduino專題；新增 **Pico 2 W with headers／RP2350** 與MicroPython板載LED首課。
+繁體中文瀏覽器 3D 教學實驗室，支援 **ESP32-DevKitC V4／WROOM-32E（38 Pin）** 與 **Arduino UNO R3／ATmega328P（32個主要排針端點）**；ESP32／UNO各有18項Arduino專題；新增 **Pico 2 W with headers／RP2350** 與3項MicroPython專題。
 
 ## 開發與驗證
 
@@ -99,6 +99,6 @@ UNO使用5V邏輯、10位ADC、原生D／A接腳與A4／A5 I²C；18課都有接
 
 ## Pico 2 W · MicroPython
 
-第三板型為 **Raspberry Pi Pico 2 W with headers（RP2350）**。右上選單切換，或開啟 `?board=pico-2-w#code`。首版提供40個獨立主排針、3D探索、板載LED閃爍首課、Python補全、Wiki及答案；由自己寫的程式匯出 `main.py`，用Thonny上傳到已安裝對應MicroPython UF2的板上。`Pin("LED")`走無線晶片，不是GP25。
+第三板型為 **Raspberry Pi Pico 2 W with headers（RP2350）**。右上選單切換，或開啟 `?board=pico-2-w#code`。目前提供40個獨立主排針、3D探索、板載LED、外接LED閃爍及按鈕控制LED三課、Python補全、6篇Wiki及答案；由自己寫的程式匯出 `main.py`，用Thonny上傳到已安裝對應MicroPython UF2的板上。`Pin("LED")`走無線晶片，不是GP25。
 
-Pico草稿與Arduino練習分開保存，跨電腦請使用Pico `.json`備份。這是受限語法教學，沒有任意Python、Wi-Fi／Bluetooth或直接燒錄；後續外接元件課程尚未加入。`npm test`另需Python 3檢查匯出語法。板型來源、40腳表、支援契約與驗證限制見 [Pico 2 W 說明](docs/pico-2-w-micropython.md)。
+Pico草稿與Arduino練習分開保存，跨電腦請使用Pico `.json`備份。這是受限語法教學，沒有任意Python、Wi-Fi／Bluetooth或直接燒錄；外接課支援3D／清單接線、範例顯示／還原、錯接診斷及分課保存。`npm test`另需Python 3檢查匯出語法。板型來源、40腳表見 [Pico 2 W 說明](docs/pico-2-w-micropython.md)；新課接線、語法與驗證見 [外接LED／按鈕課](docs/pico-external-button.md)。

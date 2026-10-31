@@ -1,5 +1,7 @@
 # Pico 2 W with headers · MicroPython 首課
 
+目前已擴充為3課，新增外接LED及按鈕控制；最新契約見 [外接LED／按鈕課](pico-external-button.md)。以下保留首版基準與驗證歷史。
+
 核對與實作日期：2026-10-31。第三種板型採 **Raspberry Pi Pico 2 W with headers**，入口 `?board=pico-2-w&lesson=blink#code`，接腳探索 `?board=pico-2-w#explore`。
 
 ## 板型決策與來源
