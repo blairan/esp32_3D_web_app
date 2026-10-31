@@ -36,6 +36,6 @@ export default function LessonPanel({buttonControl,state,analysis,dispatch}:Prop
     </section>
     <div className="lesson-actions"><button aria-pressed={state.exampleBackup!==null} onClick={()=>dispatch({type:'example'})}><BookOpen size={16}/>{state.exampleBackup!==null?'隱藏接線範例':'顯示接線範例'}</button><button onClick={()=>dispatch({type:'clear'})} disabled={!state.wires.length&&!state.pending&&state.level==='LOW'}><Trash2 size={15}/>清空接線</button></div>
     {buttonControl?<ButtonControl {...buttonControl}/>:null}
-    <p className="lesson-disclaimer">固定 GPIO23、220 Ω 與單顆 LED 的離散教學規則；不執行 Arduino 程式，也不計算真實電流。重新整理頁面會清空接線。</p>
+    <p className="lesson-disclaimer">固定 GPIO23、220 Ω 與單顆 LED 的離散教學規則；不執行 Arduino 程式，也不計算真實電流。程式與接線草稿保存在此瀏覽器；換電腦請匯出／匯入練習。</p>
   </aside>;
 }

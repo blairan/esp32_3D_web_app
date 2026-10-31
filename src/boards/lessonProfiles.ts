@@ -12,8 +12,9 @@ export function nativePin(boardId:BoardId,id:LessonId,pin:number):number{
 export function lessonPins(boardId:BoardId,id:LessonId){const lesson=lessons[id],map=(pin:number)=>nativePin(boardId,id,pin);return {primary:map(lesson.outputGPIO),outputs:lesson.outputGPIOs.map(map),input:lesson.inputGPIO===null?null:map(lesson.inputGPIO),button:hasButton(id),adc:map(34),trig:map(22),sda:boardId==='uno-r3'?18:21,scl:boardId==='uno-r3'?19:22};}
 /** Source/material adaptation only. Executed programs keep native board numbers throughout. */
 export function unoText(text:string,id:LessonId):string{
- let s=text.replace(/\b(23|22|21|18|34|27)\b/g,n=>String(nativePin('uno-r3',id,Number(n))));
- s=s.replace(/GPIO\s*(\d+)/g,(_,n)=>Number(n)>=14?'A'+(Number(n)-14):'D'+n).replace(/3V3|3\.3V|3\.3 V/g,'5V').replace(/4095/g,'1023').replace(/2048/g,'512').replace(/3072/g,'768').replace(/1500/g,id==='ldr-nightlight'?'375':'1500').replace(/2200/g,id==='ldr-nightlight'?'550':'2200').replace(/reading \/ 16/g,'reading / 4').replace(/Wire\.begin\([^)]*\)/g,'Wire.begin()').replace(/ESP32Servo/g,'Servo');
+ let s=text.replace(/\bGPIO\s*(\d+)\b/g,(_,n)=>{const pin=nativePin('uno-r3',id,Number(n));return pin>=14?'A'+(pin-14):'D'+pin;});
+ s=s.replace(/\b(23|22|21|18|34|27)\b/g,n=>String(nativePin('uno-r3',id,Number(n))));
+ s=s.replace(/3V3|3\.3V|3\.3 V/g,'5V').replace(/4095/g,'1023').replace(/2048/g,'512').replace(/3072/g,'768').replace(/1500/g,id==='ldr-nightlight'?'375':'1500').replace(/2200/g,id==='ldr-nightlight'?'550':'2200').replace(/reading \/ 16/g,'reading / 4').replace(/Wire\.begin\([^)]*\)/g,'Wire.begin()').replace(/ESP32Servo/g,'Servo');
  if(id==='pot-dimming'||id==='ldr-nightlight')s=s.replace(/\b14\b/g,'A0');
  return s;
 }

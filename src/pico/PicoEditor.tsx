@@ -1,3 +1,4 @@
+import {learningSyntax} from '../learning/editorTheme';
 import type {PicoLessonId} from './types';
 import {pythonCompletions} from './completion';
 import {useEffect,useRef} from 'react';
@@ -14,7 +15,7 @@ const highlight=StateField.define({create:()=>Decoration.none,update(value,tr){v
 export default function PicoEditor({lessonId,source,readOnly,line,error,onChange,onRead}:{lessonId?:PicoLessonId;source:string;readOnly:boolean;line:number;error:boolean;onChange:(s:string)=>void;onRead:(id:PicoArticleId,origin?:HTMLElement)=>void}){
  const host=useRef<HTMLDivElement>(null),view=useRef<EditorView|null>(null),current=useRef({onChange,onRead,lessonId});current.current={onChange,onRead,lessonId};const locked=useRef(new Compartment());
  useEffect(()=>{
-  const editor=new EditorView({parent:host.current!,state:EditorState.create({doc:source,extensions:[basicSetup,python(),indentUnit.of('    '),EditorView.lineWrapping,highlight,locked.current.of(EditorState.readOnly.of(readOnly)),EditorView.contentAttributes.of({'aria-label':'MicroPython 程式碼','aria-describedby':'python-help',spellcheck:'false',autocapitalize:'off',autocorrect:'off'}),autocompletion({override:[context=>{
+  const editor=new EditorView({parent:host.current!,state:EditorState.create({doc:source,extensions:[basicSetup,learningSyntax,python(),indentUnit.of('    '),EditorView.lineWrapping,highlight,locked.current.of(EditorState.readOnly.of(readOnly)),EditorView.contentAttributes.of({'aria-label':'MicroPython 程式碼','aria-describedby':'python-help',spellcheck:'false',autocapitalize:'off',autocorrect:'off'}),autocompletion({override:[context=>{
    if(context.state.readOnly||/Comment|String/.test(syntaxTree(context.state).resolveInner(context.pos,-1).name))return null;
    const word=context.matchBefore(/[A-Za-z_]\w*(?:\.\w*)?/);if(!word&&!context.explicit)return null;
    const options=pythonCompletions(context.state.doc.toString(),current.current.lessonId??'blink');

@@ -1,7 +1,7 @@
 export interface Appearance {accent:string;flow:boolean;page:string;panel:string;canvas:string}
-export const defaultAppearance:Appearance={accent:'#3563e9',flow:true,page:'#f4f6fa',panel:'#ffffff',canvas:'#eaf0f8'};
+export const defaultAppearance:Appearance={accent:'#bd632f',flow:true,page:'#f4f5f5',panel:'#ffffff',canvas:'#eef0f1'};
 export const appearanceKey='esp32lab-appearance-v1';
-export const themePresets=[{name:'深藍',color:'#3563e9'},{name:'紫羅蘭',color:'#7954d6'},{name:'暖橙',color:'#d96c24'},{name:'石墨',color:'#526075'}];
+export const themePresets=[{name:'實驗手冊',color:'#bd632f'},{name:'深藍',color:'#3563e9'},{name:'紫羅蘭',color:'#7954d6'},{name:'暖橙',color:'#d96c24'},{name:'石墨',color:'#526075'}];
 export function validColor(value:unknown):value is string{return typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);}
 export function readAppearance(raw:string|null):Appearance {
  try{const value=JSON.parse(raw??'null');return {accent:validColor(value?.accent)?value.accent.toLowerCase():defaultAppearance.accent,flow:typeof value?.flow==='boolean'?value.flow:true,...Object.fromEntries((['page','panel','canvas'] as const).map(key=>[key,validColor(value?.[key])?value[key].toLowerCase():defaultAppearance[key]])) as Pick<Appearance,'page'|'panel'|'canvas'>};}catch{return {...defaultAppearance};}
@@ -23,9 +23,17 @@ export function accentTokens(value:string):Record<string,string>{
 export function backgroundTokens(appearance:Appearance):Record<string,string>{
  const tokens:Record<string,string>={};
  for(const key of ['page','panel','canvas'] as const){
-  const color=appearance[key];const ink=contrast(color,'#132037')>=4.5?'#132037':contrast(color,'#ffffff')>=4.5?'#ffffff':'#000000';
+  const color=appearance[key];const ink=contrast(color,'#222629')>=4.5?'#222629':contrast(color,'#ffffff')>=4.5?'#ffffff':'#000000';
   tokens[`--${key}-bg`]=color;tokens[`--${key}-ink`]=ink;
   tokens[`--${key}-muted`]=mixColor(ink,color,.18);
  }
+ for(const surface of ['panel','page'] as const){
+  const soft=mixColor(appearance[surface],appearance.accent,.08);let ink=accentTokens(appearance.accent)['--accent-ink'];
+  for(let i=0;i<25&&Math.min(contrast(ink,appearance[surface]),contrast(ink,soft))<4.5;i++)ink=mixColor(ink,tokens[`--${surface}-ink`],.2);
+  tokens[`--${surface}-accent-soft`]=soft;tokens[`--${surface}-accent-ink`]=Math.min(contrast(ink,appearance[surface]),contrast(ink,soft))>=4.5?ink:tokens[`--${surface}-ink`];
+ }
+ const dark=tokens['--panel-ink']==='#ffffff';
+ const syntax={'--code-keyword':dark?'#e4bfff':'#6e2c9d','--code-string':dark?'#a7e7bd':'#176b3a','--code-number':dark?'#9bdcff':'#075b91','--code-comment':dark?'#b9c3cc':'#686e75'};
+ for(const [key,value] of Object.entries(syntax)){let readable=value;for(let i=0;i<25&&contrast(readable,appearance.panel)<4.5;i++)readable=mixColor(readable,tokens['--panel-ink'],.2);tokens[key]=contrast(readable,appearance.panel)>=4.5?readable:tokens['--panel-ink'];}
  return tokens;
 }

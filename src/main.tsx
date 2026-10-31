@@ -8,6 +8,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import WikiProvider from './wiki/WikiProvider';
 import './styles.css';
+import './learning/learning.css';
 const PicoApp=React.lazy(()=>import('./pico/PicoApp'));
 document.title=(selectedBoardId==='pico-2-w'?'Pico 2 W · MicroPython':pageBoardId==='uno-r3'?'UNO R3':'ESP32')+' · 3D Interactive Lab';
 const entry=new URL(location.href),isHome=!entry.searchParams.has('board')&&!entry.searchParams.has('lesson')&&!entry.hash;

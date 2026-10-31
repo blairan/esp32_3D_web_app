@@ -2,6 +2,8 @@
 
 繁體中文瀏覽器 3D 教學實驗室，支援 **ESP32-DevKitC V4／WROOM-32E（38 Pin）** 與 **Arduino UNO R3／ATmega328P（32個主要排針端點）**；ESP32／UNO各有18項Arduino專題；新增 **Pico 2 W with headers／RP2350** 與5項MicroPython專題。
 
+三板型已統一為灰白／暖橙的實驗手冊工作區：左側3D，右側「認識專題 → 接線 → 寫程式 → 觀察結果」。四步可自由切換並繼續執行，手動輸出需明確進入。流程、相容性與驗證見 [新版工作區](docs/learning-workbench.md)。
+
 ## 開發與驗證
 
 需要 Node.js 22.12+（本環境使用 24）與 npm。
@@ -33,11 +35,11 @@ npm run preview
 
 **外觀、針距、排距與細部元件是教學示意，不是製造 CAD。** 正式機構 PDF 與現行模組額定尚待補核；不將示意座標宣稱為已量測。原始 30 Pin DOIT 研究保留作歷史，現行定義依 v0.2 決策。
 
-已加入 LED 接線教學：點選端點接線、刪線、固定 220 Ω 電阻與單顆 LED、接線診斷及 HIGH／LOW 亮滅。切換右上方「LED 接線」，或使用網址 `#led` 進入。課程與規則詳見 [LED 教學契約](docs/led-lesson.md)。已加入「程式練習」（網址 `#code`）：限定 Arduino Blink 編輯器、虛擬時鐘、Worker 解譯、執行／暫停／停止／重設與行列錯誤。完整語法與限制見 [程式教學契約](docs/program-lesson.md)。使用者已授權 GitHub Pages 試用版部署；設定與首次啟用方式見 [部署說明](docs/github-pages.md)。Codex Sites 未建立。
+已加入 LED 接線教學：點選端點接線、刪線、固定 220 Ω 電阻與單顆 LED、接線診斷及 HIGH／LOW 亮滅。由右上「學習專題」選課，再選「接線」，或使用相容網址 `#led`／`#wiring` 進入。課程與規則詳見 [LED 教學契約](docs/led-lesson.md)。已加入「程式練習」（網址 `#code`）：限定 Arduino Blink 編輯器、虛擬時鐘、Worker 解譯、執行／暫停／停止／重設與行列錯誤。完整語法與限制見 [程式教學契約](docs/program-lesson.md)。使用者已授權 GitHub Pages 試用版部署；設定與首次啟用方式見 [部署說明](docs/github-pages.md)。Codex Sites 未建立。
 
 ## 驗證狀態
 
-193 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+303 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -45,7 +47,7 @@ npm run preview
 
 ## 外觀與電流指示
 
-右上「外觀」可選深藍、紫羅蘭、暖橙、石墨或自訂主色；預設藍色。有效 HIGH 接線會出現慣用電流方向亮點與箭頭，LOW／錯接不顯示。可關閉電流效果，減少動態效果與簡化模式使用靜態箭頭。程式暫停時亮點也會停止。外觀及各板型／課程的練習會分別記住在此瀏覽器；換電腦可匯出／匯入練習JSON檔。詳見 [外觀與電流紀錄](docs/appearance-current.md)。
+右上「外觀」可選實驗手冊、深藍、紫羅蘭、暖橙、石墨或自訂主色；新使用者預設暖橙，已有選擇會保留。有效 HIGH 接線會出現慣用電流方向亮點與箭頭，LOW／錯接不顯示。可關閉電流效果，減少動態效果與簡化模式使用靜態箭頭。程式暫停時亮點也會停止。外觀及各板型／課程的練習會分別記住在此瀏覽器；換電腦可匯出／匯入練習JSON檔。詳見 [外觀與電流紀錄](docs/appearance-current.md)。
 
 程式練習現預設空白 setup／loop 基本架構，沒有預填完整答案。CodeMirror 編輯器提供單行白名單補全、參數提示、語法上色與括號／縮排；輸入名稱或 Ctrl＋Space 查看建議，Enter 接受、Tab 跳參數。可自行完成後執行與觀察 LED。
 

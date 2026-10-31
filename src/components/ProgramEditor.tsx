@@ -1,3 +1,4 @@
+import {learningSyntax} from '../learning/editorTheme';
 import type {LessonId} from '../lessons';
 import {useWiki} from '../wiki/WikiProvider';
 import {topicArticles,type ArticleId} from '../wiki/articles';
@@ -41,7 +42,7 @@ export default forwardRef<ProgramEditorHandle,{lessonId:LessonId;source:string;r
  const host=useRef<HTMLDivElement>(null),view=useRef<EditorView|null>(null),change=useRef(onChange),locked=useRef(new Compartment());change.current=onChange;
  useImperativeHandle(ref,()=>({jump(line,column){const editor=view.current;if(!editor)return;const row=editor.state.doc.line(Math.min(Math.max(1,line),editor.state.doc.lines));const pos=Math.min(row.to,row.from+Math.max(0,column-1));editor.dispatch({selection:{anchor:pos,head:Math.min(row.to,pos+1)},effects:EditorView.scrollIntoView(pos,{y:'center'})});editor.focus();}}),[]);
  useEffect(()=>{
-  const editor=new EditorView({parent:host.current!,state:EditorState.create({doc:source,extensions:[basicSetup,cpp(),EditorView.lineWrapping,executionLine,showTooltip.compute(['doc','selection'],state=>{
+  const editor=new EditorView({parent:host.current!,state:EditorState.create({doc:source,extensions:[basicSetup,learningSyntax,cpp(),EditorView.lineWrapping,executionLine,showTooltip.compute(['doc','selection'],state=>{
    if(state.readOnly)return null;const pos=state.selection.main.head;const row=state.doc.lineAt(pos);const text=state.doc.sliceString(row.from,pos);const match=text.match(/\b(pinMode|digitalWrite|digitalRead|delay|millis|analogWrite|analogRead|pulseIn|delayMicroseconds)\([^)]*$/);
    const method=text.match(/\b([A-Za-z_]\w*)\.(attach|write)\([^)]*$/);
    const deviceCall=text.match(/\b([A-Za-z_]\w*)\.([A-Za-z_]\w*)\([^)]*$/);if(((currentLesson.current==='climate-dht'||String(currentLesson.current)==='environment-lab')||(currentLesson.current==='oled-i2c'||currentLesson.current==='seven-counter'||String(currentLesson.current)==='environment-lab'))&&deviceCall&&!/Comment|String/.test(syntaxTree(state).resolveInner(pos,-1).name)){const item=deviceSuggestions(state.doc.toString(),currentLesson.current).find(s=>s.label===deviceCall[1]+'.'+deviceCall[2]);if(item)return {pos,above:true,create:()=>{const dom=document.createElement('div');dom.className='parameter-hint';dom.textContent=item.detail;dom.append(wikiButton(()=>readWiki.current(articleFor(currentLesson.current,item.label))));return {dom};}};}
