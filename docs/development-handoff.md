@@ -213,3 +213,10 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 - AST＋原始位置適配標頭、32位整數、無號時間、DHT NaN／共用快取及 OLED 初始化失敗處理，拒絕空架構、錯誤或含糊時間混用；裝置名稱與註解保留。
 - 原193＋新增52＝245項測試、12項產生後C++行為測試、兩板36份指定版本Arduino CLI實際編譯、建置及桌面／320／390px瀏覽器檢查通過。詳見 [arduino-export.md](arduino-export.md)，包含固定版本、命令、證據與限制。
 - 沿既有 main→Pages 發布，新增兩板編譯 gate。不新增後端、韌體下載或直接燒錄；IDE仍需選板型／連接埠並編譯上傳。下一步為使用者下載自己的程式並於實板核對與試用；硬體未驗收。
+
+### 2026-10-31：Pico 2 W with headers／MicroPython 首課
+
+- 依最新官方型號表採 Pico 2 W with headers（RP2350），第三板型提供40接腳探索及板載LED首課。官方圖與MicroPython別名固定版本，LED使用Pin("LED")／WL_GPIO0，不套用GP25。CSV及來源見 [Pico板型與首課](pico-2-w-micropython.md)。
+- 獨立Python編輯器、補全、4篇Wiki、可展開答案、受限語法Worker、執行／暫停／停止／重設、3D LED、當前程式main.py預覽下載與Pico JSON保存。UNO／ESP32 Arduino各18課及.ino功能保留；Pico不冒用Arduino匯出器。
+- 259項單元測試、既有12項產生碼C++行為測試、建置、桌面／320及390px、真實raycast、Wiki／匯出狀態保留、檔案保存與板型切換、WebGL重試及Arduino瀏覽器回歸通過。沿既有Pages gate發布。
+- 下一步為使用者試用首課與實板Thonny驗證；外接LED、按鈕及PWM尚未加入，不宣稱完整MicroPython或硬體驗收通過。

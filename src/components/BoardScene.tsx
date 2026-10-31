@@ -1,3 +1,4 @@
+import {picoBoard,picoPins,picoPinById} from '../pico/board';
 import {pageBoardId} from '../boards/registry';
 import type {OledState} from '../program/peripheralTypes';
 import type {LessonId} from '../lessons';
@@ -11,15 +12,17 @@ import { createCircuitScene } from './circuitScene';
 import type { CircuitWire } from '../circuit';
 
 interface SceneProps {
+  pico?: {lit:boolean};
   selectedId: string; resetKey: number; simple: boolean;
   zoomCommand: { direction: 1 | -1; sequence: number } | null;
   onSelect: (id: string) => void;
   onButtonPress?:(down:boolean)=>void;accent:string;flow:boolean;reducedMotion:boolean;
   lesson?: {id:LessonId;pressed:boolean;lit2:boolean;lit3:boolean;brightness:number;rgb:number[];potPosition:number;lightPosition:number;servoAngle:number;motion:boolean;oled:OledState; wires: CircuitWire[]; lit: boolean; pending: string | null;playing:boolean };
 }
-export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion,onButtonPress }: SceneProps) {
+export default function BoardScene({ pico, selectedId, resetKey, simple, zoomCommand, onSelect, lesson, accent, flow, reducedMotion,onButtonPress }: SceneProps) {
+  const isPico=Boolean(pico),picoLit=useRef(pico?.lit??false);picoLit.current=pico?.lit??false;
   const host = useRef<HTMLDivElement>(null);
-  const api = useRef<{ select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void; setAccent:(value:string)=>void;setEffects:()=>void;circuit?: ReturnType<typeof createCircuitScene> } | null>(null);
+  const api = useRef<{ setPicoLed:(lit:boolean)=>void; select: (id: string) => void; reset: () => void; simplify: (value: boolean) => void; zoom: (direction: 1 | -1) => void; setAccent:(value:string)=>void;setEffects:()=>void;circuit?: ReturnType<typeof createCircuitScene> } | null>(null);
   const pressCallback=useRef(onButtonPress);pressCallback.current=onButtonPress;
   const selectCallback = useRef(onSelect);
   const initialSelected = useRef(selectedId);
@@ -44,7 +47,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = .95;
     const canvas = renderer.domElement;
-    canvas.setAttribute('aria-label', 'ESP32 開發板 3D 模型，拖曳旋轉、右鍵或 Shift 加拖曳平移、捲動縮放；亦可使用下方接腳清單選取');
+    canvas.setAttribute('aria-label', (isPico?picoBoard.name:pageBoardId==='uno-r3'?'UNO R3':'ESP32')+' 開發板 3D 模型，拖曳旋轉、右鍵或 Shift 加拖曳平移、捲動縮放；亦可使用下方接腳清單選取');
     container.appendChild(canvas);
     const scene = new THREE.Scene();
     let environment:THREE.WebGLRenderTarget|null=null;
@@ -86,7 +89,21 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat); mesh.position.set(x, y, z); model.add(mesh); return mesh;
     }
     const details = new THREE.Group(); model.add(details);
-    if(pageBoardId==='esp32'){
+    let picoLed:THREE.MeshStandardMaterial|null=null;
+    const scenePins=isPico?picoPins:pins,scenePinById=isPico?picoPinById:pinById;
+    if(isPico){
+      const surface=new THREE.MeshStandardMaterial({color:0x236d63,roughness:.72});materials.push(surface);
+      box(21,51,1,0,0,0,surface);
+      box(8,6,2.8,0,24,1.7,silver);box(6,.3,1.4,0,27.1,1.7,dark);
+      box(5.8,5.8,.8,0,8,1,dark);label('RP2350',6,1.6,0,8,1.43,'#eeeeee');
+      box(4,3,1,-4.2,19,1,silver);label('BOOTSEL',6,1.3,-3.6,15.8,.6);
+      box(10,10,1.2,1,-6,1.2,silver);label('CYW43439',8,1.5,1,-6,1.84,'#344455');
+      label('Pico 2 W',12,2.5,0,1,.61);label('ANTENNA',9,1.5,0,-21,.6);
+      for(let i=0;i<4;i++)box(10-i*1.4,.3,.06,0,-16-i*1.5,.55,gold);
+      for(let i=0;i<3;i++)details.attach(box(1,1,.15,3+i*1.5,3,.6,gold));
+      picoLed=new THREE.MeshStandardMaterial({color:picoLit.current?0xffbe46:0x79776d,emissive:picoLit.current?0xffa020:0x000000,emissiveIntensity:1.5});materials.push(picoLed);
+      box(1.4,2,.65,-5,24,.9,picoLed);label('LED',3,1.2,-5,21.8,.6);
+    }else if(pageBoardId==='esp32'){
     // Intentionally simplified teaching geometry. Exact mechanical dimensions remain unverified.
     box(27.9, 48.2, 1.3, 0, 0, 0, pcb);
     const surface=document.createElement('canvas');surface.width=512;surface.height=1024;const surfaceContext=surface.getContext('2d')!;
@@ -147,7 +164,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     const hitboxes: THREE.Mesh[] = [];
     const pinMeshes = new Map<string, THREE.Mesh>();
     const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }); materials.push(hitMat);
-    for (const pin of pins) {
+    for (const pin of scenePins) {
       box(1.8, 2.1, 1.8, pin.x, pin.y, 1.3, dark);
       const mat = gold.clone(); materials.push(mat);
       const shaft = box(0.68, 0.68, 5, pin.x, pin.y, 0.65, mat); pinMeshes.set(pin.pinId, shaft);
@@ -183,7 +200,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
     function reset() {
       defaultView=true;stopInertia();
       // Portrait framing adapts to a narrow canvas as well as the laptop layout.
-      const distance = lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:pageBoardId==='uno-r3'?165:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (pageBoardId==='uno-r3'?145:camera.aspect < 0.85 ? 125 : 105);
+      const distance = lessonMode ? Math.min(300,Math.max((lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?200:pageBoardId==='uno-r3'?165:(lessonId==='traffic-light'||lessonId==='rgb-mixing')?165:135,((lessonId==='traffic-light'||lessonId==='rgb-mixing'||lessonId==='ultrasonic-alert'||lessonId==='environment-lab')?140:85)/(2*Math.tan(33*Math.PI/360)*camera.aspect))) : (isPico?Math.max(145,48/(2*Math.tan(33*Math.PI/360)*camera.aspect)):pageBoardId==='uno-r3'?145:camera.aspect < 0.85 ? 125 : 105);
       camera.position.set(lessonMode ? 48 : 25, -36, distance); camera.up.set(0, 1, 0); controls.target.set(lessonMode ? (lessonId==='environment-lab'?38:22) : 0,(lessonId==='traffic-light'||lessonId==='rgb-mixing')?-18:lessonId==='ultrasonic-alert'?-12:(lessonId==='dual-led'||lessonId==='ldr-nightlight')?-7:0,0); controls.update(); requestRender();
     }
     const select = (id: string) => {
@@ -192,7 +209,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
         const mat = mesh.material as THREE.MeshStandardMaterial;
         mat.color.set(pid === id ? selectedAccent : 0xcaa851);mat.emissive.copy(pid===id?new THREE.Color(selectedAccent).multiplyScalar(.35):new THREE.Color(0));
       }
-      const pin = pinById.get(id);
+      const pin = scenePinById.get(id);
       if (pin) { highlight.position.set(pin.x, pin.y, 3.5); glow.position.set(pin.x, pin.y, 3.4); }
       requestRender();
     };
@@ -202,7 +219,7 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height, false);if(defaultView)reset(); requestRender();
     };
     const observer = new ResizeObserver(resize); observer.observe(container); resize(); reset(); select(initialSelected.current);
-    api.current = { select, reset,
+    api.current = { select, reset, setPicoLed(lit){if(picoLed){picoLed.color.set(lit?0xffbe46:0x79776d);picoLed.emissive.set(lit?0xffa020:0x000000);requestRender();}},
       setAccent(value){selectedAccent=value;highlightMat.color.set(value);glowMat.color.set(value);this.setEffects();select(selectedPinId);},
       setEffects(){const options=appearanceRef.current;controls.enableDamping=!options.reducedMotion;this.circuit?.configure({...options,enabled:options.flow,playing:currentLesson.current?.playing??true});requestRender();},
       zoom(direction) {
@@ -263,12 +280,13 @@ export default function BoardScene({ selectedId, resetKey, simple, zoomCommand, 
       scene.traverse(obj => { if (obj instanceof THREE.Mesh) obj.geometry.dispose(); });
       materials.forEach(mat => mat.dispose()); textures.forEach(texture => texture.dispose()); environment?.dispose();renderer.dispose(); if (contextAvailable) renderer.forceContextLoss(); canvas.remove();
     };
-  }, [sceneVersion, lessonMode,lessonId]);
+  }, [sceneVersion, lessonMode,lessonId,isPico]);
   useEffect(() => { initialSelected.current = selectedId; api.current?.select(selectedId); }, [selectedId]);
   useEffect(() => { api.current?.reset(); }, [resetKey]);
   useEffect(() => { currentSimple.current = simple;appearanceRef.current.simple=simple; api.current?.simplify(simple);api.current?.setEffects(); }, [simple]);
   useEffect(() => { if (zoomCommand) api.current?.zoom(zoomCommand.direction); }, [zoomCommand]);
   useEffect(() => { currentLesson.current = lesson; if (lesson) { api.current?.circuit?.update(lesson.wires, lesson.lit, lesson.pending,lesson.pressed,lesson.lit2,lesson.lit3,lesson.brightness,lesson.rgb,lesson.potPosition,lesson.lightPosition,lesson.servoAngle,lesson.motion,lesson.oled);api.current?.setEffects(); api.current?.select(selectedId); } }, [lesson, selectedId]);
   useEffect(()=>{appearanceRef.current={accent,flow,reducedMotion,simple};api.current?.setAccent(accent);},[accent,flow,reducedMotion,simple]);
+  useEffect(()=>{api.current?.setPicoLed(pico?.lit??false);},[pico?.lit]);
   return <><div className="scene-host" ref={host} data-scene-status={status} />{status !== 'ready' && <div className="scene-message" role="status">{status === 'loading' ? '正在準備 3D 開發板…' : <><strong>目前無法顯示 3D 模型</strong><span>請確認瀏覽器支援 WebGL 並啟用硬體加速。你仍可使用下方清單探索全部接腳。</span><button onClick={() => setSceneVersion(version => version + 1)}>重試 3D 模型</button></>}</div>}</>;
 }

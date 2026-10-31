@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --experimental-strip-types --test --test-concurrency=1 src/board.test.ts src/circuit.test.ts src/current.test.ts src/appearance.test.ts src/program/program.test.ts src/program/completion.test.ts src/wiki/articles.test.ts src/button-lesson.test.ts src/program/solutions.test.ts src/dual-lesson.test.ts src/traffic-lesson.test.ts src/stateful-buttons.test.ts src/load-lessons.test.ts src/rgb-pot.test.ts src/light-servo.test.ts src/motion-range.test.ts src/climate-oled.test.ts src/final-lessons.test.ts src/uno/uno.test.ts src/practice/storage.test.ts src/hardware/exportSketch.test.ts",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 src/board.test.ts src/circuit.test.ts src/current.test.ts src/appearance.test.ts src/program/program.test.ts src/program/completion.test.ts src/wiki/articles.test.ts src/button-lesson.test.ts src/program/solutions.test.ts src/dual-lesson.test.ts src/traffic-lesson.test.ts src/stateful-buttons.test.ts src/load-lessons.test.ts src/rgb-pot.test.ts src/light-servo.test.ts src/motion-range.test.ts src/climate-oled.test.ts src/final-lessons.test.ts src/uno/uno.test.ts src/practice/storage.test.ts src/hardware/exportSketch.test.ts src/pico/pico.test.ts",
     "compile:sketches": "node --experimental-strip-types scripts/compile-sketches.mjs",
     "test:hardware-runtime": "node --experimental-strip-types scripts/test-sketch-runtime.mjs"
   },
@@ -15,6 +15,7 @@
     "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/lang-python": "^6.2.1",
     "@codemirror/language": "^6.13.1",
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.15",

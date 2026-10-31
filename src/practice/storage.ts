@@ -25,7 +25,7 @@ export function validatePractice(raw:unknown):Practice{
 }
 export function parsePractice(text:string){if(new TextEncoder().encode(text).length>maxFileBytes)throw new Error('練習檔超過128KB。');let raw:unknown;try{raw=JSON.parse(text);}catch{throw new Error('不是有效的JSON練習檔。');}return validatePractice(raw);}
 export function readDraft(board:BoardId,lesson:LessonId):{draft:Practice|null;error:string|null}{try{const raw=localStorage.getItem(keyFor(board,lesson));if(!raw)return {draft:null,error:null};const draft=parsePractice(raw);if(draft.boardId!==board||draft.lessonId!==lesson)throw new Error('草稿的板型或專題不符。');return {draft,error:null};}catch(e){return {draft:null,error:e instanceof Error?e.message:'無法讀取本機草稿。'};}}
-export function writeDraft(draft:Practice){const clean=validatePractice(draft);localStorage.setItem(keyFor(clean.boardId,clean.lessonId),JSON.stringify(clean));try{localStorage.setItem('interactive-lab-last-practice-v1',JSON.stringify({boardId:clean.boardId,lessonId:clean.lessonId}));}catch{/* The draft itself was saved; the shortcut is optional. */}}
+export function writeDraft(draft:Practice){const clean=validatePractice(draft);localStorage.setItem(keyFor(clean.boardId,clean.lessonId),JSON.stringify(clean));try{localStorage.setItem('interactive-lab-last-board-v1',clean.boardId);localStorage.setItem('interactive-lab-last-practice-v1',JSON.stringify({boardId:clean.boardId,lessonId:clean.lessonId}));}catch{/* The draft itself was saved; the shortcut is optional. */}}
 // Import writes the destination explicitly; old page effects must not overwrite it while navigating.
 let importing=false;
 export function isImporting(){return importing;}
