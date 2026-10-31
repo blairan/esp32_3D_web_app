@@ -52,7 +52,7 @@ test('scope analysis rejects unknown, duplicate and self-initialized variables w
  const code=build(program('int wait = 20; delay(wait);','int wait = 10;')).code;assert.ok(code.includes('int32_t wait = 20;'));
 });
 test('known Arduino, library and reserved implementation names report declaration position',()=>{
- for(const name of ['Serial','min','uint32_t','NAN','LED_BUILTIN','__helper','_Helper','PORTB'])rejects(`int ${name} = 0;\nvoid setup() {}\nvoid loop() { delay(1); }`,'blink',/衝突/);
+ for(const name of ['Serial','min','uint32_t','NAN','LED_BUILTIN','__helper','_Helper','PORTB','constexpr','and','SSD1306_LCDWIDTH'])rejects(`int ${name} = 0;\nvoid setup() {}\nvoid loop() { delay(1); }`,'blink',/衝突/);
  rejects(solutions['servo-angle'].code.replaceAll('arm','Serial'),'servo-angle',/衝突/);
 });
 test('ambiguous time/signed data, negative offsets, ordinary uses and timestamp ordering are blocked',()=>{
