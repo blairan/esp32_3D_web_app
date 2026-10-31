@@ -32,3 +32,6 @@ main{max-width:1600px;padding:22px 24px 0}.intro{padding:0 12px 22px}.intro h1{f
 
 .learning-workbench button,.app-header button{transition:box-shadow .15s,transform .15s}
 .learning-workbench .viewer-bottom .current-indicator small,.learning-workbench .viewer-bottom .pico-led-indicator small{color:var(--panel-muted)}
+/* Action labels remain readable even in the narrow layouts. */
+.learning-workbench :is(button,select,summary),.app-header :is(button,select,summary),.wiki-dialog button,.arduino-export button{font-size:16px!important}
+.learning-workbench .parts-list li{font-size:16px}
