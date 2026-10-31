@@ -37,7 +37,7 @@ npm run preview
 
 ## 驗證狀態
 
-186 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+193 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -45,7 +45,7 @@ npm run preview
 
 ## 外觀與電流指示
 
-右上「外觀」可選深藍、紫羅蘭、暖橙、石墨或自訂主色；預設藍色。有效 HIGH 接線會出現慣用電流方向亮點與箭頭，LOW／錯接不顯示。可關閉電流效果，減少動態效果與簡化模式使用靜態箭頭。程式暫停時亮點也會停止。只有外觀偏好會記住在本瀏覽器，程式與接線仍不保存。詳見 [外觀與電流紀錄](docs/appearance-current.md)。
+右上「外觀」可選深藍、紫羅蘭、暖橙、石墨或自訂主色；預設藍色。有效 HIGH 接線會出現慣用電流方向亮點與箭頭，LOW／錯接不顯示。可關閉電流效果，減少動態效果與簡化模式使用靜態箭頭。程式暫停時亮點也會停止。外觀及各板型／課程的練習會分別記住在此瀏覽器；換電腦可匯出／匯入練習JSON檔。詳見 [外觀與電流紀錄](docs/appearance-current.md)。
 
 程式練習現預設空白 setup／loop 基本架構，沒有預填完整答案。CodeMirror 編輯器提供單行白名單補全、參數提示、語法上色與括號／縮排；輸入名稱或 Ctrl＋Space 查看建議，Enter 接受、Tab 跳參數。可自行完成後執行與觀察 LED。
 
@@ -86,3 +86,7 @@ npm run preview
 右上「開發板」切換ESP32／UNO；舊網址仍預設ESP32。[UNO接腳探索](https://blairan.github.io/esp32_3D_web_app/?board=uno-r3)、[UNO第一課](https://blairan.github.io/esp32_3D_web_app/?board=uno-r3&lesson=blink#code)、[UNO環境監測整合](https://blairan.github.io/esp32_3D_web_app/?board=uno-r3&lesson=environment-lab#code)。切換前確認未保存工作，確認後清空練習並停止Worker，外觀保留。
 
 UNO使用5V邏輯、10位ADC、原生D／A接腳與A4／A5 I²C；18課都有接線、空架構、補全、Wiki與標準答案。186項測試通過，UNO 28篇教學／ESP32 26篇；兩板共36份答案經瀏覽器Worker檢查。官方資料與來源授權見 [板型基準](docs/uno-r3-board-baseline.md)，課程配置與驗證限制見 [UNO交接](docs/uno-r3-lessons.md)。ICSP僅外觀；沒有完整CPU、任意C++編譯、硬體連線或跨裝置進度同步。
+
+## 練習保存與換電腦接續
+
+每塊板、每課自動保存程式、接線、範例備份與輸入設定。重新整理還原草稿，重開首頁接續上次保存的板型／課程，保持未執行狀態。標題下方按「匯出練習」下載目前課程JSON；在另一台電腦開網站按「匯入練習」，確認後載入對應板型／課程。沒有登入或雲端同步，清除瀏覽器資料會刪除本機草稿，請按需匯出備份。193項測試與建置通過；細節見 [保存契約與驗證](docs/practice-storage.md)。

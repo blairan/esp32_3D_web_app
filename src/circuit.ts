@@ -10,6 +10,7 @@ export interface CircuitState {
   notice: string; nextWire: number; exampleBackup: CircuitWire[] | null;
 }
 export type CircuitAction =
+  | {type:'restore';state:CircuitState}
   | {type:'temperature'|'humidity';value:number}|{type:'climate-fault';value:boolean}
   | {type:'distance';value:number}|{type:'echo';value:boolean}|{type:'motion';value:boolean}
   | {type:'light';value:number}|{type:'servo-angle';angle:number}
@@ -61,6 +62,7 @@ export function wireError(wires: CircuitWire[], from: string, to: string,lessonI
 }
 export function circuitReducer(state: CircuitState, action: CircuitAction): CircuitState {
   switch (action.type) {
+    case 'restore':return action.state;
     case 'temperature':return Number.isInteger(action.value)&&action.value>=-40&&action.value<=80?{...state,temperature:action.value}:state;
     case 'humidity':return Number.isInteger(action.value)&&action.value>=0&&action.value<=100?{...state,humidity:action.value}:state;
     case 'climate-fault':return {...state,climateFault:action.value};
