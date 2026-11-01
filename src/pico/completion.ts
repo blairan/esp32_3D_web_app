@@ -6,6 +6,11 @@ export function pythonCompletions(source:string,id:PicoLessonId):PythonCompletio
  const name=source.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*(?:["']LED["']|15)\s*,\s*Pin\.OUT\s*\)/m)?.[1]??source.match(/^([A-Za-z_]\w*)\s*=\s*PWM\(\s*Pin\(\s*15\s*\)\s*\)/m)?.[1]??'led',input=source.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*14\s*,\s*Pin\.IN\s*,\s*Pin\.PULL_UP\s*\)/m)?.[1]??'button';
  const topic:PicoArticleId=id==='blink'?'pin':'external';
  const options:PythonCompletion[]=[{label:'Pin',template:id==='blink'?'Pin("LED", Pin.OUT)':'Pin(15, Pin.OUT)',detail:id==='blink'?'建立板載 LED 輸出':'建立GP15（實體20）外接LED輸出',topic},{label:'while',template:'while True:\n\t${指令}',detail:'4空白縮排的重複區塊',topic:'intro'},...[['on','開啟 LED'],['off','關閉 LED'],['toggle','反轉 LED']].map<PythonCompletion>(([method,detail])=>({label:name+'.'+method,template:name+'.'+method+'()',detail,topic})),{label:name+'.value',template:name+'.value(${0})',detail:'設定輸出：0關、1開',topic},{label:'time.sleep',template:'time.sleep(${1})',detail:'等待秒數，可用小數秒',topic:'timing'},{label:'time.sleep_ms',template:'time.sleep_ms(${1000})',detail:'等待整數毫秒',topic:'timing'}];
+ if(id==='ldr-nightlight'){
+  const sensor=source.match(/^([A-Za-z_]\w*)\s*=\s*ADC\(\s*Pin\(\s*26\s*\)\s*\)/m)?.[1]??'light';
+  options.push({label:'ADC',template:'ADC(Pin(26))',detail:'GP26／實體31，3.3V光敏分壓',topic:'light'},{label:sensor+'.read_u16',template:sensor+'.read_u16()',detail:'讀取0～65535；越亮讀值越高',topic:'light'},{label:'if',template:'if \${reading} < \${24000}:\n\t\${指令}',detail:'單一門檻比較；中間區間保持原狀',topic:'light'});
+  for(const n of new Set([...source.matchAll(/^\s*([A-Za-z_]\w*)\s*=/gm)].map(m=>m[1]).filter(n=>n!==name&&n!==sensor)))options.push({label:n,template:n,detail:'已宣告整數變數',topic:'light'});
+ }
  if(id==='button-led')options.push({label:input+'.value',template:input+'.value()',detail:'讀GP14：按下0，放開1',topic:'button'},{label:'if',template:`if ${input}.value() == \${0}:\n\t\${指令}\nelse:\n\t\${指令}`,detail:'按鈕條件；分支內8個空白',topic:'button'},{label:'Pin.IN',template:'Pin.IN, Pin.PULL_UP',detail:'輸入模式與內建上拉',topic:'button'});
  if(pwm){const knob=source.match(/^([A-Za-z_]\w*)\s*=\s*ADC\(\s*Pin\(\s*26\s*\)\s*\)/m)?.[1]??'knob';
   const digital=options.filter(o=>!o.label.startsWith(name+'.')&&o.label!=='Pin');

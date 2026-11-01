@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {picoPinById} from './board';
 import {partsFor} from './circuit';
 import type {PicoView,PicoLessonId} from './types';
-const positions:Record<string,[number,number,number]>={'p-res:a':[20,5,2],'p-res:b':[34,5,2],'p-led:a':[44,-4,2],'p-led:k':[52,-4,2],'p-button:a1':[24,-20,2],'p-button:a2':[24,-29,2],'p-button:b1':[40,-20,2],'p-button:b2':[40,-29,2],'p-pot:vcc':[23,-34,2],'p-pot:w':[32,-34,2],'p-pot:gnd':[41,-34,2]};
+const positions:Record<string,[number,number,number]>={'p-res:a':[20,5,2],'p-res:b':[34,5,2],'p-led:a':[44,-4,2],'p-led:k':[52,-4,2],'p-button:a1':[24,-20,2],'p-button:a2':[24,-29,2],'p-button:b1':[40,-20,2],'p-button:b2':[40,-29,2],'p-pot:vcc':[23,-34,2],'p-pot:w':[32,-34,2],'p-pot:gnd':[41,-34,2],'p-ldr:a':[23,-34,2],'p-ldr:b':[34,-34,2],'p-divider:a':[47,-34,2],'p-divider:b':[61,-34,2]};
 export function picoPosition(id:string):THREE.Vector3|null {const pin=picoPinById.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(...p):null;}
 export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
  const group=new THREE.Group(),dynamic=new THREE.Group();group.add(dynamic);const materials:THREE.Material[]=[],textures:THREE.Texture[]=[],hitboxes:THREE.Mesh[]=[];
@@ -14,6 +14,14 @@ export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
  const led=new THREE.Mesh(new THREE.SphereGeometry(2.8,20,16),red);led.position.set(48,4,3);group.add(led);box(.5,7,.5,44,0,2,metal);box(.5,7,.5,52,0,2,metal);label('LED',48,11,9);label('A+',44,-8,5);label('K-',52,-8,5);
  let knob:THREE.Mesh|null=null;
  if(id==='pot-dimming'){box(18,13,2,32,-24,1.8,dark);const cap=new THREE.Mesh(new THREE.CylinderGeometry(5.4,5.4,3,24),metal);cap.rotation.x=Math.PI/2;cap.position.set(32,-23,4);group.add(cap);knob=box(.7,4,.4,32,-23,5.7,pending);knob.geometry.translate(0,1.5,0);label('10k POT',32,-13,15);label('3V3 / W / GND',32,-39,24);}
+ if(id==='ldr-nightlight'){
+  const disc=new THREE.Mesh(new THREE.CylinderGeometry(5.5,5.5,1.6,24),beige);disc.rotation.x=Math.PI/2;disc.position.set(28.5,-24,3);group.add(disc);
+  const path=new THREE.CatmullRomCurve3([[-3,3],[-1,3],[-1,1],[2,1],[2,-1],[-2,-1],[-2,-3],[3,-3]].map(([x,y])=>new THREE.Vector3(28.5+x,-24+y,3.9)));
+  group.add(new THREE.Mesh(new THREE.TubeGeometry(path,32,.3,6,false),dark));
+  for(const x of [23,34])box(.5,8,.5,x,-30,2,metal);label('LDR',28.5,-14,12);
+  box(10,3,2,54,-24,2,beige);box(14,.5,.5,54,-24,2,metal);for(const x of [47,61])box(.5,10,.5,x,-29,2,metal);
+  for(let i=0;i<4;i++)box(.7,3.1,2.1,51+i*1.8,-24,2,material([0x785030,0x1c2028,0xe97929,0xbb9a43][i]));label('10k ohm',54,-14,16);
+ }
  let button:THREE.Mesh|null=null;
  if(id==='button-led'){box(12,10,2,32,-24,1.8,dark);button=box(7,7,2,32,-24,3.8,metal);const hit=new THREE.Mesh(new THREE.BoxGeometry(9,8,5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.push(hit.material as THREE.Material);hit.position.set(32,-24,4);hit.userData.pinId='button:press';group.add(hit);hitboxes.push(hit);label('A1/A2',23,-35,11);label('B1/B2',41,-35,11);}
  const terminals=new Map<string,THREE.Mesh>();for(const key of Object.keys(partsFor(id))){const p=picoPosition(key)!;const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),terminal);mesh.position.copy(p);mesh.userData.pinId=key;group.add(mesh);terminals.set(key,mesh);const pick=new THREE.Mesh(new THREE.SphereGeometry(2.1,12,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.push(pick.material as THREE.Material);pick.position.copy(p);pick.userData.pinId=key;group.add(pick);hitboxes.push(pick);}
