@@ -1,3 +1,4 @@
+import {SignalRecorder,emptySignals,type SignalHistory} from '../waveforms/signals.ts';
 import type {PicoLessonId} from './types.ts';
 import {hasPicoPWM} from './types.ts';
 import {PythonError} from './pythonError.ts';
@@ -74,9 +75,10 @@ export function parsePython(source:string,lessonId:PicoLessonId='blink'):PythonP
  if(!controls(loop))throw new PythonError('迴圈需要 LED 控制指令。',loopLine);
  return {setup,loop,name,buttonName:buttonName||undefined,lessonId,source,adcName:adcName||undefined,pwm};
 }
-export interface PythonSnapshot {timeMs:number;lit:boolean;line:number;operations:number;cycles:number;lastRead:0|1|null;duty:number;frequency:number|null;lastAnalogRead:number|null;variables:Record<string,number>}
+export interface PythonSnapshot {waveform:SignalHistory;timeMs:number;lit:boolean;line:number;operations:number;cycles:number;lastRead:0|1|null;duty:number;frequency:number|null;lastAnalogRead:number|null;variables:Record<string,number>}
 export class PythonRuntime {
- program:PythonProgram;snapshot:PythonSnapshot={timeMs:0,lit:false,line:0,operations:0,cycles:0,lastRead:null,duty:0,frequency:null,lastAnalogRead:null,variables:{}};private index=0;private readyAt=0;private setup=true;private branch:PythonStep[]=[];private vars=new Map<string,number>();
+ program:PythonProgram;snapshot:PythonSnapshot={waveform:emptySignals(),timeMs:0,lit:false,line:0,operations:0,cycles:0,lastRead:null,duty:0,frequency:null,lastAnalogRead:null,variables:{}};private index=0;private readyAt=0;private setup=true;private branch:PythonStep[]=[];private vars=new Map<string,number>();
+ private signals=new SignalRecorder();
  constructor(program:PythonProgram){this.program=program;}
  advanceTo(time:number,input:0|1|null=1,adc:number|null=null):PythonSnapshot {
   if(!Number.isFinite(time)||time<this.snapshot.timeMs||time>86400000)throw new PythonError('虛擬時間超出0～24小時範圍，請重設。',this.snapshot.line||1);
@@ -95,12 +97,12 @@ export class PythonRuntime {
    const step=this.branch.length?this.branch.shift()!:body[this.index++];this.snapshot.line=step.line;spend(step.line);
    if(isBranch(step)){let result:boolean;if(step.kind==='if'){if(input===null)throw new PythonError('按鈕接線未確認，無法讀取GP14。',step.line);this.snapshot.lastRead=input;result=input===step.equals;}else{const l=evaluate(step.left,step.line),r=evaluate(step.right,step.line);result=step.operator==='=='?l===r:step.operator==='!='?l!==r:step.operator==='>'?l>r:step.operator==='<'?l<r:step.operator==='>='?l>=r:l<=r;}this.branch=[...(result?step.then:step.otherwise)];}
    else if(step.kind==='assign')this.vars.set(step.name,evaluate(step.value,step.line));
-   else if(step.kind==='freq')this.snapshot.frequency=evaluate(step.value,step.line);
-   else if(step.kind==='duty'){const duty=evaluate(step.value,step.line);if(this.snapshot.frequency===null||duty<0||duty>65535)throw new PythonError('PWM需先設定頻率，且duty_u16須介於0～65535。',step.line);this.snapshot.duty=duty;this.snapshot.lit=duty>0;}
+   else if(step.kind==='freq'){this.snapshot.frequency=evaluate(step.value,step.line);this.signals.record({channel:15,timeMs:this.readyAt,kind:'pwm',value:this.snapshot.duty,frequency:this.snapshot.frequency});}
+   else if(step.kind==='duty'){const duty=evaluate(step.value,step.line);if(this.snapshot.frequency===null||duty<0||duty>65535)throw new PythonError('PWM需先設定頻率，且duty_u16須介於0～65535。',step.line);this.snapshot.duty=duty;this.snapshot.lit=duty>0;this.signals.record({channel:15,timeMs:this.readyAt,kind:'pwm',value:duty,frequency:this.snapshot.frequency});}
    else if(step.kind==='wait')this.readyAt+=step.milliseconds;
-   else {this.snapshot.lit=step.kind==='toggle'?!this.snapshot.lit:step.kind==='on';this.snapshot.duty=this.snapshot.lit?65535:0;}
+   else {this.snapshot.lit=step.kind==='toggle'?!this.snapshot.lit:step.kind==='on';this.snapshot.duty=this.snapshot.lit?65535:0;this.signals.record({channel:this.program.lessonId==='blink'?-1:15,timeMs:this.readyAt,kind:'digital',value:this.snapshot.lit?1:0});}
   }
-  this.snapshot.timeMs=time;this.snapshot.variables=Object.fromEntries(this.vars);return {...this.snapshot,variables:{...this.snapshot.variables}};
+  this.snapshot.timeMs=time;this.snapshot.waveform=this.signals.snapshot();this.snapshot.variables=Object.fromEntries(this.vars);return {...this.snapshot,waveform:this.snapshot.waveform,variables:{...this.snapshot.variables}};
  }
 }
 export function exportPython(source:string,lessonId:PicoLessonId='blink'){parsePython(source,lessonId);return {filename:'main.py',code:'# Raspberry Pi Pico 2 W / MicroPython\n# Firmware: https://micropython.org/download/RPI_PICO2_W/\n# Install the board-specific UF2 first; upload main.py using Thonny.\n# This file contains your current practice, not an automatic answer.\n'+source+(source.endsWith('\n')?'':'\n')};}

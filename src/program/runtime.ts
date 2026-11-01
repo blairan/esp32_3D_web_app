@@ -1,3 +1,4 @@
+import {SignalRecorder,emptySignals,type SignalHistory} from '../waveforms/signals.ts';
 import {TeachingPeripherals} from './peripherals.ts';
 import {emptyPeripherals,type DeviceInputs,type ClimateReading,type OledState} from './peripheralTypes.ts';
 import {hasADC} from '../lessons.ts';
@@ -7,10 +8,10 @@ import { limits, ProgramError } from './language.ts';
 import type { Program, Statement, Expression, SourceLocation, ProgramDiagnostic } from './language.ts';
 export type InputLevel='HIGH'|'LOW'|null;
 export interface TraceEntry {gpio:number;timeMs:number;level:'HIGH'|'LOW';duty?:number;angle?:number;line:number}
-export interface ProgramSnapshot {climate:ClimateReading|null;oled:OledState;lastPulse:number|null;servo:{attached:boolean;angle:number|null};lastAnalogRead:number|null;variables:Record<string,number>;outputs:Record<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
+export interface ProgramSnapshot {waveform:SignalHistory;climate:ClimateReading|null;oled:OledState;lastPulse:number|null;servo:{attached:boolean;angle:number|null};lastAnalogRead:number|null;variables:Record<string,number>;outputs:Record<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>;timeMs:number;outputEnabled:boolean;inputEnabled:boolean;lastRead:InputLevel;level:'HIGH'|'LOW';line:number;loopCount:number;trace:TraceEntry[]}
 export type RunStatus='idle'|'starting'|'running'|'paused'|'stopped'|'error';
 export interface ProgramState extends ProgramSnapshot {status:RunStatus;diagnostic:ProgramDiagnostic|null}
-export const initialProgramState:ProgramState={...emptyPeripherals(),lastPulse:null,servo:{attached:false,angle:null},lastAnalogRead:null,variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
+export const initialProgramState:ProgramState={waveform:emptySignals(),...emptyPeripherals(),lastPulse:null,servo:{attached:false,angle:null},lastAnalogRead:null,variables:{},outputs:{},timeMs:0,outputEnabled:false,inputEnabled:false,lastRead:null,level:'LOW',line:0,loopCount:0,trace:[],status:'idle',diagnostic:null};
 
 interface Frame {body:Statement[];pc:number;locals:Map<string,number>}
 export class ProgramRuntime {
@@ -23,6 +24,7 @@ export class ProgramRuntime {
  private analogInput:number|null=0;private lastAnalogRead:number|null=null;
  private outputs=new Map<number,{enabled:boolean;duty?:number;level:'HIGH'|'LOW'}>();
  private outputEnabled=false;private inputEnabled=false;private input:InputLevel='HIGH';private lastRead:InputLevel=null;
+ private signals=new SignalRecorder();
  private level:'HIGH'|'LOW'='LOW';private line=0;private loopCount=0;private operations=0;private trace:TraceEntry[]=[];
  constructor(program:Program,input:InputLevel='HIGH',analogInput:number|null=0,distanceCm:number|null=100,devices:DeviceInputs={climate:{temperature:25,humidity:60},oledWired:true}){this.program=program;this.board=getBoard(program.boardId);this.profile=lessonPins(program.boardId,program.lessonId);this.gpioPins=new Map(this.board.pins.filter(p=>p.gpio!==null).map(p=>[p.gpio!,p]));this.devices=new TeachingPeripherals(devices,program.boardId);this.setDistance(distanceCm);this.setAnalogInput(analogInput);this.program=program;this.input=input;for(const statement of program.globals)this.declareVariable(statement,this.globals);this.frames=[this.frame(program.setup)];}
  private frame(body:Statement[]):Frame{return {body,pc:0,locals:new Map()};}
@@ -69,7 +71,7 @@ export class ProgramRuntime {
   }
   return gpio;
  }
- snapshot():ProgramSnapshot{return {...this.devices.snapshot(),lastPulse:this.lastPulse,servo:{...this.servo},lastAnalogRead:this.lastAnalogRead,variables:Object.fromEntries(this.globals),outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
+ snapshot():ProgramSnapshot{return {waveform:this.signals.snapshot(),...this.devices.snapshot(),lastPulse:this.lastPulse,servo:{...this.servo},lastAnalogRead:this.lastAnalogRead,variables:Object.fromEntries(this.globals),outputs:Object.fromEntries([...this.outputs].map(([gpio,value])=>[gpio,{...value}])),timeMs:this.time,outputEnabled:this.outputEnabled,inputEnabled:this.inputEnabled,lastRead:this.lastRead,level:this.level,line:this.line,loopCount:this.loopCount,trace:[...this.trace]};}
  advanceTo(target:number):ProgramSnapshot {
   if(!Number.isSafeInteger(target)||target<this.time||target>limits.virtualTime)throw new ProgramError('虛擬時間超過上限，請重設後再執行。',this.program.loopAt);
   let tickOperations=0;const started=performance.now();
@@ -93,16 +95,16 @@ export class ProgramRuntime {
     case 'servo-write':{if(!this.servo.attached)throw new ProgramError(this.program.boardId==='uno-r3'?'請先呼叫 attach(9)，才能控制伺服。':'請先呼叫伺服物件的 attach(23)，才能 write。',statement.at);const angle=this.value(statement.angle);if(angle<0||angle>180)throw new ProgramError('伺服角度只接受 0 到 180 的整數；不接受微秒脈寬。',statement.at);this.servo.angle=angle;this.trace.push({gpio:this.profile.primary,timeMs:this.time,level:'HIGH',angle,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'assign':{let scope:Map<string,number>|undefined;for(let i=this.frames.length-1;i>=0;i--)if(this.frames[i].locals.has(statement.name)){scope=this.frames[i].locals;break;}scope??=this.globals.has(statement.name)?this.globals:undefined;if(!scope)throw new ProgramError(`未知變數「${statement.name}」，請先用 int 宣告。`,statement.at);scope.set(statement.name,this.value(statement.value));break;}
     case 'declare':this.declareVariable(statement,frame.locals);break;
-    case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode!=='OUTPUT'?'input':'output');if(statement.mode!=='OUTPUT')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===this.profile.primary)this.outputEnabled=true;}break;}
+    case 'pinMode':{const gpio=this.checkPin(statement.pin,statement.at,statement.mode!=='OUTPUT'?'input':'output');if(statement.mode!=='OUTPUT')this.inputEnabled=true;else {this.outputs.set(gpio,{enabled:true,level:this.outputs.get(gpio)?.level??'LOW'});if(gpio===this.profile.primary)this.outputEnabled=true;const output=this.outputs.get(gpio)!;this.signals.record({channel:gpio,timeMs:this.time,kind:'digital',value:output.level==='HIGH'?1:0});}break;}
     case 'pwm':{
      if(this.program.boardId==='uno-r3'&&!this.board.pwmPins.includes(this.value(statement.pin)))throw new ProgramError('UNO analogWrite 只接受 D3／5／6／9／10／11 的 PWM 腳。',statement.at);
      const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 analogWrite。`,statement.at);
      const duty=this.value(statement.duty);if(duty<0||duty>255)throw new ProgramError('analogWrite 佔空比只接受 0 到 255 的整數。',statement.at);
-     const level=duty>0?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level,duty});if(gpio===this.profile.primary)this.level=level;this.trace.push({gpio,timeMs:this.time,level,duty,line:this.line});this.trace=this.trace.slice(-8);break;
+     const level=duty>0?'HIGH':'LOW';this.outputs.set(gpio,{enabled:true,level,duty});if(gpio===this.profile.primary)this.level=level;this.signals.record({channel:gpio,timeMs:this.time,kind:'pwm',value:duty});this.trace.push({gpio,timeMs:this.time,level,duty,line:this.line});this.trace=this.trace.slice(-8);break;
     }
     case 'write':{
      const gpio=this.checkPin(statement.pin,statement.at);if(!this.outputs.get(gpio)?.enabled)throw new ProgramError(`請先執行 pinMode(${gpio}, OUTPUT)，才能 digitalWrite。`,statement.at);
-     const value=typeof statement.level==='string'?statement.level==='HIGH'?1:0:this.value(statement.level);if(value!==0&&value!==1)throw new ProgramError('digitalWrite 電位只接受 HIGH／LOW 或值為 0／1 的整數。',statement.at);const level=value===1?'HIGH':'LOW';const previous=this.outputs.get(gpio)?.level??'LOW';if(this.program.lessonId==='ultrasonic-alert'&&gpio===this.profile.trig){if(level==='HIGH'&&previous==='LOW'){this.trigHighAt=this.time*1000;this.triggerReady=false;}if(level==='LOW'&&previous==='HIGH'){this.triggerReady=this.trigHighAt!==null&&this.time*1000-this.trigHighAt>=9.999;this.trigHighAt=null;}}this.outputs.set(gpio,{enabled:true,level});if(gpio===this.profile.primary)this.level=level;this.trace.push({gpio,timeMs:this.time,level,line:this.line});this.trace=this.trace.slice(-8);break;}
+     const value=typeof statement.level==='string'?statement.level==='HIGH'?1:0:this.value(statement.level);if(value!==0&&value!==1)throw new ProgramError('digitalWrite 電位只接受 HIGH／LOW 或值為 0／1 的整數。',statement.at);const level=value===1?'HIGH':'LOW';const previous=this.outputs.get(gpio)?.level??'LOW';if(this.program.lessonId==='ultrasonic-alert'&&gpio===this.profile.trig){if(level==='HIGH'&&previous==='LOW'){this.trigHighAt=this.time*1000;this.triggerReady=false;}if(level==='LOW'&&previous==='HIGH'){this.triggerReady=this.trigHighAt!==null&&this.time*1000-this.trigHighAt>=9.999;this.trigHighAt=null;}}this.outputs.set(gpio,{enabled:true,level});if(gpio===this.profile.primary)this.level=level;this.signals.record({channel:gpio,timeMs:this.time,kind:'digital',value:level==='HIGH'?1:0});this.trace.push({gpio,timeMs:this.time,level,line:this.line});this.trace=this.trace.slice(-8);break;}
     case 'if':{
      const left=this.value(statement.left),right=this.value(statement.right);const match=statement.operator==='=='?left===right:statement.operator==='!='?left!==right:statement.operator==='>'?left>right:statement.operator==='<'?left<right:statement.operator==='>='?left>=right:left<=right;const body=match?statement.then:statement.otherwise;
      this.frames.push(this.frame(body));break;

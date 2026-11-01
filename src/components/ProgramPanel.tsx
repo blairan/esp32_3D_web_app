@@ -1,3 +1,4 @@
+import {ArduinoWaveforms} from '../waveforms/BoardWaveforms';
 import {StepSection} from '../learning/LearningWorkbench';
 import ClimateControl,{type ClimateControlProps} from './ClimateControl';
 import OledStatus from './OledStatus';
@@ -22,10 +23,11 @@ const ProgramEditor=lazy(()=>import('./ProgramEditor'));
 import type { ProgramState } from '../program/runtime';
 import type { CircuitAnalysis } from '../circuit';
 interface Props {
+  manual:boolean;
   climateControl?:ClimateControlProps;sensorControl?:MotionRangeProps;potControl?:PotControlProps;exampleVisible:boolean;lessonId:LessonId;buttonControl?:ButtonControlProps;source:string;state:ProgramState;analysis:CircuitAnalysis;
   onChange:(source:string)=>void;onShowCode:()=>void;onScaffold:()=>void;onWiringExample:()=>void;
 }
-export default function ProgramPanel({climateControl,sensorControl,potControl,exampleVisible,lessonId,buttonControl,source,state,analysis,onChange,onShowCode,onScaffold,onWiringExample}:Props){
+export default function ProgramPanel({manual,climateControl,sensorControl,potControl,exampleVisible,lessonId,buttonControl,source,state,analysis,onChange,onShowCode,onScaffold,onWiringExample}:Props){
   const openWiki=useWiki();const exercise=buttonExercise(lessonId)??loadExercise(lessonId);
   const editor=useRef<ProgramEditorHandle>(null);
   const active=['starting','running','paused'].includes(state.status);
@@ -39,7 +41,7 @@ export default function ProgramPanel({climateControl,sensorControl,potControl,ex
     <div className="practice-goal"><div className="practice-heading"><strong>練習目標</strong><button type="button" className="wiki-link" onClick={event=>openWiki(exercise?exercise.topic:lessonId==='traffic-light'?topicArticles.traffic:lessonId==='button-led'?topicArticles.button:lessonId==='dual-led'?topicArticles.dual:topicArticles.structure,event.currentTarget)}><BookOpen size={14}/>查看教學 Wiki</button></div><p>{exercise?exercise.goal:lessonId==='traffic-light'?'將紅 GPIO23、黃 GPIO22、綠 GPIO21 各設為 OUTPUT；紅燈 3 秒 → 綠燈 3 秒 → 黃燈 1 秒，每階段只亮一顆。請自己完成程式。':lessonId==='dual-led'?'將 GPIO23 與 GPIO22 分別設為輸出；先讓 LED 1 亮、LED 2 滅，等待後交換狀態，再等待。請自己完成程式。':lessonId==='button-led'?'設定 GPIO18 內建上拉與 GPIO23 輸出，讀取按鈕電位，用 if／else 讓 LED 按住亮、放開滅，並安排正值等待。請自己完成程式。':'在 setup 設定 GPIO23 輸出，在 loop 讓 LED 亮、等待、熄滅、再等待。請自己完成程式。'}</p><details><summary>需要一點提示？</summary><p>{exercise?exercise.hint:lessonId==='traffic-light'?'三個接腳都要各自設定 OUTPUT。每階段先熄滅前一顆、再點亮下一顆，最後用 delay 維持；完整週期為 7 秒。':lessonId==='dual-led'?'兩個接腳都須先 pinMode。digitalWrite 只改變指定腳位，不會自動熄滅另一顆；請明確寫出兩顆的狀態，再用 delay 維持。':lessonId==='button-led'?'INPUT_PULLUP 下按下是 LOW。先在 loop 宣告讀值變數，或直接在 if 條件呼叫 digitalRead；每一條會執行的路徑都須有正值 delay。':'先宣告接腳變數；設定模式用 pinMode，改變電位用 digitalWrite，等待用 delay。loop 至少要有一次大於 0 的等待。'}</p></details></div>
     <Suspense fallback={<p>正在載入程式編輯器…</p>}><ProgramEditor key={lessonId} lessonId={lessonId} ref={editor} source={source} readOnly={active} line={state.line} error={state.status==='error'} onChange={onChange}/></Suspense>
     <ReferenceAnswer key={lessonId} lessonId={lessonId}/>
-    </StepSection><StepSection when="results"><h2>觀察結果</h2>
+    </StepSection><StepSection when="results"><h2>觀察結果</h2><ArduinoWaveforms boardId="esp32" lessonId={lessonId} state={state} manual={manual}/>
     {climateControl?<ClimateControl {...climateControl}/>:null}
     {sensorControl?<MotionRangeControl {...sensorControl}/>:null}
     {potControl?<PotControl {...potControl}/>:null}
