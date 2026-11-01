@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {picoPinById} from './board';
 import {partsFor} from './circuit';
 import type {PicoView,PicoLessonId} from './types';
-const positions:Record<string,[number,number,number]>={'p-res:a':[20,5,2],'p-res:b':[34,5,2],'p-led:a':[44,-4,2],'p-led:k':[52,-4,2],'p-button:a1':[24,-20,2],'p-button:a2':[24,-29,2],'p-button:b1':[40,-20,2],'p-button:b2':[40,-29,2],'p-pot:vcc':[23,-34,2],'p-pot:w':[32,-34,2],'p-pot:gnd':[41,-34,2],'p-ldr:a':[23,-34,2],'p-ldr:b':[34,-34,2],'p-divider:a':[47,-34,2],'p-divider:b':[61,-34,2]};
+const positions:Record<string,[number,number,number]>={'p-res:a':[20,5,2],'p-res:b':[34,5,2],'p-led:a':[44,-4,2],'p-led:k':[52,-4,2],'p-button:a1':[24,-20,2],'p-button:a2':[24,-29,2],'p-button:b1':[40,-20,2],'p-button:b2':[40,-29,2],'p-pot:vcc':[23,-34,2],'p-pot:w':[32,-34,2],'p-pot:gnd':[41,-34,2],'p-ldr:a':[23,-34,2],'p-ldr:b':[34,-34,2],'p-divider:a':[47,-34,2],'p-divider:b':[61,-34,2],'p-pir:vcc':[23,-36,2],'p-pir:out':[32,-36,2],'p-pir:gnd':[41,-36,2]};
 export function picoPosition(id:string):THREE.Vector3|null {const pin=picoPinById.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(...p):null;}
 export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
  const group=new THREE.Group(),dynamic=new THREE.Group();group.add(dynamic);const materials:THREE.Material[]=[],textures:THREE.Texture[]=[],hitboxes:THREE.Mesh[]=[];
@@ -21,6 +21,11 @@ export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
   for(const x of [23,34])box(.5,8,.5,x,-30,2,metal);label('LDR',28.5,-14,12);
   box(10,3,2,54,-24,2,beige);box(14,.5,.5,54,-24,2,metal);for(const x of [47,61])box(.5,10,.5,x,-29,2,metal);
   for(let i=0;i<4;i++)box(.7,3.1,2.1,51+i*1.8,-24,2,material([0x785030,0x1c2028,0xe97929,0xbb9a43][i]));label('10k ohm',54,-14,16);
+ }
+ if(id==='pir-led'){
+  box(24,19,1.6,32,-23,1.6,material(0x2b6271));
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(7.5,16,8,0,Math.PI*2,0,Math.PI/2),material(0xf3f2e9));dome.rotation.x=Math.PI/2;dome.position.set(32,-22,2.5);group.add(dome);
+  for(const x of [23,32,41])box(.6,7,.6,x,-33,2,metal);label('PIR',32,-9,12);label('5V / OUT / GND',32,-42,27);
  }
  let button:THREE.Mesh|null=null;
  if(id==='button-led'){box(12,10,2,32,-24,1.8,dark);button=box(7,7,2,32,-24,3.8,metal);const hit=new THREE.Mesh(new THREE.BoxGeometry(9,8,5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.push(hit.material as THREE.Material);hit.position.set(32,-24,4);hit.userData.pinId='button:press';group.add(hit);hitboxes.push(hit);label('A1/A2',23,-35,11);label('B1/B2',41,-35,11);}

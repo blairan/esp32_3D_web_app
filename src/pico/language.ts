@@ -1,6 +1,6 @@
 import {SignalRecorder,emptySignals,type SignalHistory} from '../waveforms/signals.ts';
 import type {PicoLessonId} from './types.ts';
-import {hasPicoPWM,hasPicoADC} from './types.ts';
+import {hasPicoPWM,hasPicoADC,hasPicoDigitalInput} from './types.ts';
 import {PythonError} from './pythonError.ts';
 import {parseExpression,type PythonExpression} from './expressions.ts';
 export {PythonError} from './pythonError.ts';
@@ -39,29 +39,29 @@ export function parsePython(source:string,lessonId:PicoLessonId='blink'):PythonP
   const wait=text.match(/^time\.(sleep|sleep_ms)\(\s*(\d+(?:\.\d+)?|\.\d+)\s*\)$/);
   if(wait){if(!timeImport)error('請先 import time。');const n=Number(wait[2]),ms=wait[1]==='sleep'?n*1000:n;if(!Number.isInteger(ms)||ms<0||ms>60000||(wait[1]==='sleep_ms'&&!Number.isInteger(n)))error('等待需為0～60000的整數毫秒；sleep() 可用秒的小數。');index++;return {kind:'wait',milliseconds:ms,line:r.line};}
   if(text==='pass')error('這是尚未完成的練習架構，請用自己的 LED 指令取代 pass。');
-  return error('此行尚未支援或語法不完整；請依本課使用 LED 指令、等待及允許的按鈕 if／else。');
+  return error('此行尚未支援或語法不完整；請依本課使用 LED 指令、等待及本課允許的 if／else。');
  };
  while(index<rows.length){const r=rows[index],text=r.text;if(r.indent!==0)error('while True 之前的匯入與初始化不需縮排。');
-  if(text==='while True:'){if(!pinImport||!timeImport||!name||(lessonId==='button-led'&&!buttonName)||(analog&&!adcName))error('請先匯入 Pin、time，並建立本課的 LED／按鈕物件。');if(pwm&&!frequencySet)error('請先在迴圈前設定PWM freq()。');loopLine=r.line;index++;break;}
+  if(text==='while True:'){if(!pinImport||!timeImport||!name||(hasPicoDigitalInput(lessonId)&&!buttonName)||(analog&&!adcName))error('請先匯入 Pin、time，並建立本課的LED與必要輸入物件。');if(pwm&&!frequencySet)error('請先在迴圈前設定PWM freq()。');loopLine=r.line;index++;break;}
   if(text.startsWith('from machine import ')||text==='import time'){checkCount();if(text.startsWith('from')){if(pinImport)error('Pin 只需匯入一次。');const names=text.slice(20).split(',').map(n=>n.trim());const allowed=['Pin',...(pwm?['PWM']:[]),...(analog?['ADC']:[])];if(names.length!==new Set(names).size||!names.includes('Pin')||names.some(n=>!allowed.includes(n)))error('此課不支援這個匯入清單。');names.forEach(n=>imported.add(n));pinImport=true;}else{if(timeImport)error('time 只需匯入一次。');timeImport=true;}index++;continue;}
   const pwmDeclaration=text.match(/^([A-Za-z_]\w*)\s*=\s*PWM\(\s*Pin\(\s*15\s*\)\s*\)$/),adcDeclaration=text.match(/^([A-Za-z_]\w*)\s*=\s*ADC\(\s*Pin\(\s*26\s*\)\s*\)$/);
   if(pwmDeclaration||adcDeclaration){checkCount();const n=(pwmDeclaration??adcDeclaration)![1];if((pwmDeclaration?!pwm:!analog)||!pinImport||!imported.has(pwmDeclaration?'PWM':'ADC'))error('本課未支援或未匯入此PWM／ADC類別。');if(forbidden.has(n)||imported.has(n)||n.startsWith('_')||variables.has(n)||[name,buttonName,adcName].includes(n))error('此物件名稱為保留字或已重複，請重新命名。');if(pwmDeclaration){if(name)error('只接受一個GP15 PWM物件。');name=n;}else{if(adcName)error('只接受一個GP26 ADC物件。');adcName=n;}index++;continue;}
-  const output=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*(["'])LED\2\s*,\s*Pin\.OUT\s*\)$/),external=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*15\s*,\s*Pin\.OUT\s*\)$/),input=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*14\s*,\s*Pin\.IN\s*,\s*Pin\.PULL_UP\s*\)$/);
+  const output=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*(["'])LED\2\s*,\s*Pin\.OUT\s*\)$/),external=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*15\s*,\s*Pin\.OUT\s*\)$/),buttonInput=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*14\s*,\s*Pin\.IN\s*,\s*Pin\.PULL_UP\s*\)$/),pirInput=text.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*14\s*,\s*Pin\.IN\s*\)$/),input=buttonInput??pirInput;
   const declaration=output??external??input;
   if(declaration){checkCount();if(pwm)error('本課輸出需使用PWM(Pin(15))，輸入用ADC(Pin(26))。');if(!pinImport)error('請先 from machine import Pin。');const n=declaration[1];if(forbidden.has(n)||n.startsWith('_'))error('此物件名稱為保留字，請重新命名。');if(imported.has(n)||variables.has(n)||n===adcName||n===name||n===buttonName)error('物件名稱重複，請使用不同名稱。');
-   if(input){if(lessonId!=='button-led')error('此課不支援按鈕輸入。');if(buttonName)error('本課只接受一個按鈕物件。');buttonName=n;}
+   if(input){if(buttonInput&&lessonId!=='button-led'||pirInput&&lessonId!=='pir-led')error(lessonId==='pir-led'?'PIR課使用 Pin(14, Pin.IN)，不使用PULL_UP。':'此課不支援這種輸入模式。');if(buttonName)error('本課只接受一個數位輸入物件。');buttonName=n;}
    else {if((lessonId==='blink')!==Boolean(output))error(lessonId==='blink'?'板載課使用 Pin("LED", Pin.OUT)，不支援外接 GPIO。':'外接課請使用 Pin(15, Pin.OUT)，不是板載 LED。');if(name)error('本課只接受一個 LED 物件。');name=n;}
    index++;continue;
   }
   if(/Pin\(\s*25\b/.test(text))error('Pico 2 W 的板載 LED 不在 GPIO25，請使用 Pin("LED", Pin.OUT)。');
-  if(/\bPin\s*\(/.test(text))error(lessonId==='blink'?'本課僅支援 Pin("LED", Pin.OUT)。':'本課僅支援LED的 Pin(15, Pin.OUT)'+(lessonId==='button-led'?'及按鈕的 Pin(14, Pin.IN, Pin.PULL_UP)':'')+'；數字為GPIO編號，不是實體腳號。');
+  if(/\bPin\s*\(/.test(text))error(lessonId==='blink'?'本課僅支援 Pin("LED", Pin.OUT)。':'本課僅支援LED的 Pin(15, Pin.OUT)'+(lessonId==='button-led'?'及按鈕的 Pin(14, Pin.IN, Pin.PULL_UP)':lessonId==='pir-led'?'及PIR的 Pin(14, Pin.IN)':'')+'；數字為GPIO編號，不是實體腳號。');
   setup.push(simple());
  }
  while(index<rows.length){const r=rows[index];if(r.indent!==4)error('while True 內每行請縮排4個空白；不支援巢狀迴圈。');
   if(r.text.startsWith('if ')){
-   if(lessonId!=='button-led'&&!numeric)error('此課不支援 if 分支。');
+   if(!hasPicoDigitalInput(lessonId)&&!numeric)error('此課不支援 if 分支。');
    const condition=r.text.match(/^if ([A-Za-z_]\w*)\.value\(\s*\)\s*==\s*([01]):$/),comparison=numeric?r.text.match(/^if (.*?)\s*(==|!=|>=|<=|>|<)\s*(.*):$/):null;
-   if(!numeric&&(!condition||condition[1]!==buttonName))error('條件僅支援 if 已建立的按鈕.value() == 0或1:。');
+   if(!numeric&&(!condition||condition[1]!==buttonName))error('條件僅支援 if 已建立的輸入物件.value() == 0或1:。');
    if(numeric&&!comparison)error('條件僅支援單一整數比較，不支援其他Python語法。');
    const left=comparison?parseExpression(comparison[1],variables,adcName||undefined,r.line,r.indent+1):null,right=comparison?parseExpression(comparison[3],variables,adcName||undefined,r.line,r.indent+1):null;
    checkCount();index++;
@@ -97,7 +97,7 @@ export class PythonRuntime {
    const body=this.setup?this.program.setup:this.program.loop;
    if(!this.branch.length&&this.index>=body.length){this.index=0;if(this.setup)this.setup=false;else this.snapshot.cycles++;continue;}
    const step=this.branch.length?this.branch.shift()!:body[this.index++];this.snapshot.line=step.line;spend(step.line);
-   if(isBranch(step)){let result:boolean;if(step.kind==='if'){if(input===null)throw new PythonError('按鈕接線未確認，無法讀取GP14。',step.line);this.snapshot.lastRead=input;result=input===step.equals;}else{const l=evaluate(step.left,step.line),r=evaluate(step.right,step.line);result=step.operator==='=='?l===r:step.operator==='!='?l!==r:step.operator==='>'?l>r:step.operator==='<'?l<r:step.operator==='>='?l>=r:l<=r;}this.branch=[...(result?step.then:step.otherwise)];}
+   if(isBranch(step)){let result:boolean;if(step.kind==='if'){if(input===null)throw new PythonError(this.program.lessonId==='pir-led'?'PIR接線未確認，無法讀取GP14。':'按鈕接線未確認，無法讀取GP14。',step.line);this.snapshot.lastRead=input;result=input===step.equals;}else{const l=evaluate(step.left,step.line),r=evaluate(step.right,step.line);result=step.operator==='=='?l===r:step.operator==='!='?l!==r:step.operator==='>'?l>r:step.operator==='<'?l<r:step.operator==='>='?l>=r:l<=r;}this.branch=[...(result?step.then:step.otherwise)];}
    else if(step.kind==='assign')this.vars.set(step.name,evaluate(step.value,step.line));
    else if(step.kind==='freq'){this.snapshot.frequency=evaluate(step.value,step.line);this.signals.record({channel:15,timeMs:this.readyAt,kind:'pwm',value:this.snapshot.duty,frequency:this.snapshot.frequency});}
    else if(step.kind==='duty'){const duty=evaluate(step.value,step.line);if(this.snapshot.frequency===null||duty<0||duty>65535)throw new PythonError('PWM需先設定頻率，且duty_u16須介於0～65535。',step.line);this.snapshot.duty=duty;this.snapshot.lit=duty>0;this.signals.record({channel:15,timeMs:this.readyAt,kind:'pwm',value:duty,frequency:this.snapshot.frequency});}
