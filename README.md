@@ -39,7 +39,7 @@ npm run preview
 
 ## 驗證狀態
 
-312 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+320 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -108,3 +108,5 @@ Pico草稿與Arduino練習分開保存，跨電腦請使用Pico `.json`備份。
 ## 波形參考
 
 「觀察結果」提供LED HIGH／LOW虛擬時間波形與PWM三週期理想參考，可選25%／50%／75%或跟隨目前程式，並顯示週期與高低電位時間。Pico沿用程式freq；UNO／ESP32的1000Hz只是參考，不宣稱實板PWM時脈。資料不寫入練習備份，詳見 [波形說明與驗證](docs/waveforms.md)。
+
+波形區的「圖形種類」另可切換 **正弦波教學參考**（頻率／相對振幅／時間範圍可調，無需執行程式）與PWM課的 **佔空比變化曲線**（依實際命令階梯保持）。正弦圖不連動接腳，不把GPIO方波改畫成類比輸出。詳見 [正弦參考契約](docs/sine-reference.md)。

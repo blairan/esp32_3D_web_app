@@ -17,16 +17,20 @@ export class SignalRecorder {
 }
 export interface SignalSegment {from:number;to:number;value:number}
 /** No state is invented before the earliest retained transition for this channel. */
-export function digitalSegments(history:SignalHistory,channel:number,start:number,end:number):SignalSegment[]{
+export function signalSegments(history:SignalHistory,channel:number,start:number,end:number,kind:SignalEvent['kind']):SignalSegment[]{
  const result:SignalSegment[]=[];let current:SignalEvent|undefined;
  for(const event of [...(history.baseline??[]),...history.events]){
   if(event.channel!==channel)continue;
   if(event.timeMs>end)break;
-  if(current?.kind==='digital'&&event.timeMs>=start)result.push({from:Math.max(start,current.timeMs),to:event.timeMs,value:current.value});
+  if(current?.kind===kind&&event.timeMs>=start)result.push({from:Math.max(start,current.timeMs),to:event.timeMs,value:current.value});
   current=event;
  }
- if(current?.kind==='digital')result.push({from:Math.max(start,current.timeMs),to:end,value:current.value});
+ if(current?.kind===kind)result.push({from:Math.max(start,current.timeMs),to:end,value:current.value});
  return result.filter(s=>s.to>=s.from);
+}
+export function digitalSegments(history:SignalHistory,channel:number,start:number,end:number){return signalSegments(history,channel,start,end,'digital');}
+export function dutySegments(history:SignalHistory,channel:number,start:number,end:number,maximum:number){
+ return signalSegments(history,channel,start,end,'pwm').map(s=>({...s,value:s.value/maximum*100}));
 }
 export function pwmTiming(ratio:number,frequency:number){
  if(!Number.isFinite(ratio)||ratio<0||ratio>1||!Number.isFinite(frequency)||frequency<=0)throw new Error('Invalid PWM reference');

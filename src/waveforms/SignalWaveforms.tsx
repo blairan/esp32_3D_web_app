@@ -1,9 +1,12 @@
+import SineReference from './SineReference';
+import DutyHistory from './DutyHistory';
 import {useEffect,useId,useRef,useState} from 'react';
 import {digitalSegments,pwmPath,pwmTiming,type SignalHistory} from './signals';
 export interface WaveformChannel {id:number;label:string;pwm:boolean;maximum?:number;duty?:number;frequency?:number|null;frequencyFromProgram?:boolean}
 interface Props {channels:WaveformChannel[];history:SignalHistory;timeMs:number;line:number;manual:boolean;status:string}
 const format=(value:number)=>Number(value.toPrecision(6)).toLocaleString('en-US',{maximumFractionDigits:6});
 export default function SignalWaveforms({channels,history,timeMs,line,manual,status}:Props){
+ const [view,setView]=useState<'signal'|'sine'|'duty'>('signal');
  const [channelId,setChannelId]=useState(channels[0].id),[windowMs,setWindowMs]=useState(5000),[reference,setReference]=useState('program');const id=useId(),host=useRef<HTMLElement>(null);const [width,setWidth]=useState(600);
  useEffect(()=>{const observer=new ResizeObserver(entries=>{const measured=entries[0].contentRect.width;if(measured>0)setWidth(Math.max(180,Math.floor(measured)));});if(host.current)observer.observe(host.current);return()=>observer.disconnect();},[]);
  const left=56,right=width-18,plot=right-left,ticks=width<360?[0,1]:width<540?[0,.5,1]:[0,.25,.5,.75,1];
@@ -15,10 +18,11 @@ export default function SignalWaveforms({channels,history,timeMs,line,manual,sta
  const available=!manual&&['running','paused'].includes(status)&&channel.duty!==undefined,ratio=reference==='program'?(available?channel.duty!/(channel.maximum??255):null):Number(reference)/100;
  const frequency=channel.frequency??1000,timing=ratio===null?null:pwmTiming(ratio,frequency),latest=events.at(-1);
  return <section ref={host} className="signal-waveforms" aria-labelledby={id} data-waveform-channel={channel.id} data-waveform-status={status}>
-  <div className="waveform-heading"><h3 id={id}>{channel.pwm?'PWM 參考波形':'LED 數位波形'}</h3>{channels.length>1?<label>觀察通道<select aria-label="波形通道" value={channel.id} onChange={e=>setChannelId(Number(e.target.value))}>{channels.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>:<strong>{channel.label}</strong>}</div>
-  <p className="waveform-position" data-waveform-time={timeMs}>程式位置：{line>0?`第 ${line} 行`:'尚未執行'} · 虛擬時間 {format(timeMs)} ms</p>
-  {manual?<p className="waveform-notice">手動模式不記錄程式波形；執行自己的程式後才開始記錄。</p>:null}
-  {channel.pwm?<>
+  <div className="waveform-heading"><h3 id={id}>{view==='sine'?'正弦波教學參考':view==='duty'?'PWM 佔空比變化':channel.pwm?'PWM 參考波形':'LED 數位波形'}</h3>{view==='sine'?<strong>獨立參考 · 不連動接腳</strong>:channels.length>1?<label>觀察通道<select aria-label="波形通道" value={channel.id} onChange={e=>setChannelId(Number(e.target.value))}>{channels.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>:<strong>{channel.label}</strong>}</div>
+  <label className="waveform-choice waveform-view">圖形種類<select aria-label="圖形種類" value={view} onChange={e=>setView(e.target.value as typeof view)}><option value="signal">{channel.pwm?'PWM 參考波形':'LED 數位波形'}</option><option value="sine">正弦波教學參考</option>{channel.pwm&&<option value="duty">佔空比變化曲線</option>}</select></label>
+  <p hidden={view==='sine'} className="waveform-position" data-waveform-time={timeMs}>程式位置：{line>0?`第 ${line} 行`:'尚未執行'} · 虛擬時間 {format(timeMs)} ms</p>
+  {manual&&view!=='sine'?<p className="waveform-notice">手動模式不記錄程式波形；執行自己的程式後才開始記錄。</p>:null}
+  <div hidden={view!=='signal'}>{channel.pwm?<>
    <label className="waveform-choice">佔空比來源<select aria-label="PWM 波形來源" value={reference} onChange={e=>setReference(e.target.value)}><option value="program">跟隨目前程式</option>{[25,50,75].map(v=><option key={v} value={v}>{v}% 參考</option>)}</select></label>
    {timing&&ratio!==null?<>
     <svg className="waveform-chart" viewBox={`0 0 ${width} 150`} role="img" aria-label={`${channel.label} 理想PWM參考，佔空比${format(ratio*100)}%，頻率${format(frequency)}Hz，顯示三個週期`} data-pwm-ratio={ratio}>
@@ -39,6 +43,8 @@ export default function SignalWaveforms({channels,history,timeMs,line,manual,sta
    </svg>:<p className="waveform-empty">尚無可顯示的數位輸出；請完成接線並執行自己的程式。</p>}
    <p className="waveform-notice">依虛擬時間中的輸出變化繪製；不表示 LED 電流或實板電壓。{latest?`最近輸出：${latest.value?'HIGH':'LOW'}（${format(latest.timeMs)} ms）。`:''}最多保留 512 筆跨通道變化與各通道的邊界狀態；{history.dropped>0?'較早資料已捨棄，沒有已知狀態的區段留白。':'未設定輸出前的區段留白。'}暫停保留，停止、錯誤、重設或重新執行清空。</p>
    {events.length?<details className="waveform-records"><summary>查看最近輸出數值</summary><table><thead><tr><th>虛擬時間（ms）</th><th>邏輯電位</th></tr></thead><tbody>{events.slice(-6).reverse().map((e,i)=><tr key={i}><td>{format(e.timeMs)}</td><td>{e.value?'HIGH':'LOW'}</td></tr>)}</tbody></table></details>:null}
-  </>}
+  </>}</div>
+  <SineReference width={width} active={view==='sine'}/>
+  {channel.pwm&&<DutyHistory width={width} active={view==='duty'} history={history} channel={channel.id} maximum={channel.maximum??255} timeMs={timeMs} manual={manual}/>}
  </section>;
 }
