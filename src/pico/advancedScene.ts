@@ -1,0 +1,6 @@
+import {createCircuitScene} from '../components/circuitScene';
+import {currentPath} from '../circuit';
+import {picoPinById} from './board';
+import {advancedParts,canonicalWires,toPico,type AdvancedId} from './advancedLessons';
+import type {PicoView} from './types';
+export function createAdvancedScene(id:AdvancedId){const c=createCircuitScene(id,{pins:picoPinById,parts:advancedParts(id),path:(w,l,_id,l2,l3)=>currentPath(canonicalWires(w,id),l,id,l2,l3).map(s=>({...s,from:toPico(s.from),to:toPico(s.to)}))});let options={accent:'#bd6226',enabled:true,playing:false,simple:false,reducedMotion:false};return {group:c.group,hitboxes:c.hitboxes,update(v:PicoView){const e=v.external,a=e?.advanced;const outputs=a?.outputs??{},on=(pin:number)=>Boolean(v.lit&&outputs[pin]?.value);c.update(e?.wires??[],on(15)||id==='servo-angle'&&Boolean(a?.servo!==null&&a),e?.pending??null,e?.pressed??false,on(13),on(12),1,[15,13,12].map(p=>v.lit?Math.round((outputs[p]?.value??0)/65535*255):0),2048,3072,a?.servo??90,false,a?.oled);},configure(next:Partial<typeof options>){options={...options,...next};c.configure(options);},needsAnimation:()=>c.needsAnimation(),animate:(delta:number)=>c.animate(delta),dispose:()=>c.dispose()};}

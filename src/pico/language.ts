@@ -1,3 +1,5 @@
+import {isAdvanced,advancedCourses} from './advancedLessons.ts';
+import {parseAdvanced,AdvancedRuntime,type AdvancedProgram,type AdvancedSnapshot,type AdvancedInputs,defaultAdvancedInputs} from './advancedEngine.ts';
 import {SignalRecorder,emptySignals,type SignalHistory} from '../waveforms/signals.ts';
 import type {PicoLessonId} from './types.ts';
 import {hasPicoPWM,hasPicoButton,hasPicoADC,hasPicoDigitalInput} from './types.ts';
@@ -5,7 +7,7 @@ import {PythonError} from './pythonError.ts';
 import {parseExpression,type PythonExpression} from './expressions.ts';
 export {PythonError} from './pythonError.ts';
 export type PythonStep={kind:'on'|'off'|'toggle'|'wait';milliseconds:number;line:number}|{kind:'if';equals:0|1;then:PythonStep[];otherwise:PythonStep[];line:number}|{kind:'compare';left:PythonExpression;right:PythonExpression;operator:'=='|'!='|'>'|'<'|'>='|'<=';then:PythonStep[];otherwise:PythonStep[];line:number}|{kind:'assign';name:string;value:PythonExpression;line:number}|{kind:'freq'|'duty';value:PythonExpression;line:number};
-export interface PythonProgram {setup:PythonStep[];loop:PythonStep[];name:string;source:string;lessonId:PicoLessonId;buttonName?:string;adcName?:string;pwm:boolean}
+export interface PythonProgram {setup:PythonStep[];loop:PythonStep[];name:string;source:string;lessonId:PicoLessonId;buttonName?:string;adcName?:string;pwm:boolean;advanced?:AdvancedProgram}
 function isBranch(s:PythonStep):s is Extract<PythonStep,{kind:'if'|'compare'}>{return s.kind==='if'||s.kind==='compare';}
 export const picoScaffold=`from machine import Pin\nimport time\n\nled = Pin("LED", Pin.OUT)\n\nwhile True:\n    # 在這裡練習：開燈、等待、關燈、等待\n    pass\n`;
 export const picoAnswer=`from machine import Pin\nimport time\n\nled = Pin("LED", Pin.OUT)\n\nwhile True:\n    led.on()\n    time.sleep(1)\n    led.off()\n    time.sleep(1)\n`;
@@ -14,6 +16,7 @@ export const picoAnswer=`from machine import Pin\nimport time\n\nled = Pin("LED"
 function withoutComment(line:string){let quote='';for(let i=0;i<line.length;i++){const c=line[i];if(quote){if(c==='\\')i++;else if(c===quote)quote='';}else if(c==='"'||c==="'")quote=c;else if(c==='#')return line.slice(0,i);}return line;}
 const forbidden=new Set(['Pin','time','while','True','False','None','from','import','pass','print','exec','eval','open','__import__','for','if','elif','else','finally','class','def','return','try','except','break','continue','with','as','lambda','global','nonlocal','async','await','and','or','not','in','is','del','assert','raise','yield']);
 export function parsePython(source:string,lessonId:PicoLessonId='blink'):PythonProgram {
+ if(isAdvanced(lessonId)){const advanced=parseAdvanced(source,lessonId);return {setup:[],loop:[],name:'',source,lessonId,pwm:false,advanced};}
  if(source.length>12000||source.split('\n').length>400)throw new PythonError('程式最多12000字元、400行。',1);
  const rows=source.split('\n').map((s,i)=>{const raw=withoutComment(s.replace(/\r$/,''));if(raw.includes('\t'))throw new PythonError('縮排請使用4個空白，不使用 Tab 字元。',i+1,raw.indexOf('\t')+1);return {text:raw.trim(),indent:raw.length-raw.trimStart().length,line:i+1};}).filter(r=>r.text);
  const setup:PythonStep[]=[],loop:PythonStep[]=[];let pinImport=false,timeImport=false,name='',buttonName='',adcName='',frequencySet=false,index=0,count=0,loopLine=1;
@@ -77,12 +80,13 @@ export function parsePython(source:string,lessonId:PicoLessonId='blink'):PythonP
  if(!controls(loop))throw new PythonError('迴圈需要 LED 控制指令。',loopLine);
  return {setup,loop,name,buttonName:buttonName||undefined,lessonId,source,adcName:adcName||undefined,pwm};
 }
-export interface PythonSnapshot {waveform:SignalHistory;timeMs:number;lit:boolean;line:number;operations:number;cycles:number;lastRead:0|1|null;duty:number;frequency:number|null;lastAnalogRead:number|null;variables:Record<string,number>}
+export interface PythonSnapshot {waveform:SignalHistory;timeMs:number;lit:boolean;line:number;operations:number;cycles:number;lastRead:0|1|null;duty:number;frequency:number|null;lastAnalogRead:number|null;variables:Record<string,number>;advanced?:AdvancedSnapshot}
 export class PythonRuntime {
  program:PythonProgram;snapshot:PythonSnapshot={waveform:emptySignals(),timeMs:0,lit:false,line:0,operations:0,cycles:0,lastRead:null,duty:0,frequency:null,lastAnalogRead:null,variables:{}};private index=0;private readyAt=0;private setup=true;private branch:PythonStep[]=[];private vars=new Map<string,number>();
- private signals=new SignalRecorder();
- constructor(program:PythonProgram){this.program=program;}
- advanceTo(time:number,input:0|1|null=1,adc:number|null=null):PythonSnapshot {
+ private signals=new SignalRecorder();private advancedRuntime:AdvancedRuntime|undefined;
+ constructor(program:PythonProgram){this.program=program;if(program.advanced)this.advancedRuntime=new AdvancedRuntime(program.advanced);}
+ advanceTo(time:number,input:0|1|null=1,adc:number|null=null,inputs:AdvancedInputs=defaultAdvancedInputs):PythonSnapshot {
+  if(this.advancedRuntime){const advanced=this.advancedRuntime.advanceTo(time,input,adc,inputs);this.snapshot={...advanced,advanced};return this.snapshot;}
   if(!Number.isFinite(time)||time<this.snapshot.timeMs||time>86400000)throw new PythonError('虛擬時間超出0～24小時範圍，請重設。',this.snapshot.line||1);
   let budget=0;
   const spend=(line:number)=>{if(++budget>500||++this.snapshot.operations>100000)throw new PythonError('已達本課執行預算，請停止或重設。',line);};
@@ -108,4 +112,4 @@ export class PythonRuntime {
   this.snapshot.timeMs=time;this.snapshot.waveform=this.signals.snapshot();this.snapshot.variables=Object.fromEntries(this.vars);return {...this.snapshot,waveform:this.snapshot.waveform,variables:{...this.snapshot.variables}};
  }
 }
-export function exportPython(source:string,lessonId:PicoLessonId='blink'){parsePython(source,lessonId);return {filename:'main.py',code:'# Raspberry Pi Pico 2 W / MicroPython\n# Firmware: https://micropython.org/download/RPI_PICO2_W/\n# Install the board-specific UF2 first; upload main.py using Thonny.\n# This file contains your current practice, not an automatic answer.\n'+source+(source.endsWith('\n')?'':'\n')};}
+export function exportPython(source:string,lessonId:PicoLessonId='blink'){parsePython(source,lessonId);return {filename:'main.py',code:(isAdvanced(lessonId)?'# Lesson: '+advancedCourses[lessonId].title+'\n# '+(advancedCourses[lessonId].library??'Built-in machine/time/dht APIs')+'\n# Verify hardware power, GPIO voltages and error cleanup before running.\n':'')+'# Raspberry Pi Pico 2 W / MicroPython\n# Firmware: https://micropython.org/download/RPI_PICO2_W/\n# Install the board-specific UF2 first; upload main.py using Thonny.\n# This file contains your current practice, not an automatic answer.\n'+source+(source.endsWith('\n')?'':'\n')};}

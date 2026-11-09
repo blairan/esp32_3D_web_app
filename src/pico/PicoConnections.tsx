@@ -1,8 +1,11 @@
+import AdvancedWiring from './AdvancedWiring';
+import {isAdvanced} from './advancedLessons';
 import {partsFor,picoTerminalLabel} from './circuit';
 import {picoPins} from './board';
 import {hasPicoADC,hasPicoDigitalInput,type PicoLessonId} from './types';
 import type {CircuitWire} from '../circuit';
 export default function PicoConnections({id,wires,pending,example,onPick,onRemove,onSample,onClear,onRead}:{id:PicoLessonId;wires:CircuitWire[];pending:string|null;example:boolean;onPick:(t:string)=>void;onRemove:(id:string)=>void;onSample:()=>void;onClear:()=>void;onRead:()=>void}){
+ if(isAdvanced(id))return <AdvancedWiring {...{id,wires,pending,example,onPick,onRemove,onSample,onClear,onRead}}/>;
  if(id==='blink')return null;
  const terminal=(t:string)=><button key={t} className={`terminal-button${pending===t?' pending':''}`} aria-label={'接線端點 '+picoTerminalLabel(t)} aria-pressed={pending===t} onClick={()=>onPick(t)}><i/>{picoTerminalLabel(t)}</button>;
  const parts=partsFor(id);

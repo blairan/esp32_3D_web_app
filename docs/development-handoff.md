@@ -278,3 +278,13 @@ React + TypeScript + Vite + Three.js 直接整合，獨立的場景、接腳資�
 新增button-toggle，Pico共8課、11篇Wiki，三板型44課。沿用GP14上拉按鈕、GP15／220Ω外接LED五線，新增前次樣本與下降邊緣練習；長按與放開不重複切換。預設仍為待完成架構，完整答案、改名補全、Wiki、變數與數位波形、main.py及JSON獨立草稿完成。數值讀取僅開放新課，原七課白名單不變。
 
 354項測試、受控Python十個輸入與VM對照、既有12項C++檢查及建置通過。新課長按／再次按下／Space按鍵、取樣／暫停、步驟／Wiki／焦點、下載／JSON、接線失效與1440／1280／390／320px檢查通過，原七課執行回歸通過。沿既有main→Pages及36份Arduino編譯gate發布。詳見[pico-button-toggle.md](pico-button-toggle.md)。此課不宣稱20ms輪詢等於實板去彈跳；未進行硬體彈跳、燒錄或Acer效能驗收。下一步為使用者試用，再選下一課。
+
+### 2026-11-09：Pico其餘十二課全部補齊
+
+使用者授權全部完成，按既有ESP32／UNO基礎課程對照新增09～20：雙LED、交通號誌、按鈕計數器、蜂鳴器、RGB、Servo、超音波、PIR延遲、DHT、OLED、TM1637、環境監測整合。原八課保留；Pico共20課、23篇Wiki，三板型56課。
+
+新增獨立受限MicroPython AST／虛擬時間引擎，多GPIO與周邊、Pico原生接線映射、共用3D幾何、空架構／可展開答案、補全／Wiki、樣本／變數／顯示、原程式main.py與驅動來源、v1 JSON新課inputs與草稿保護完成。四步／暫停／閱讀與匯出保留狀態；接線或裝置錯誤停止並清輸出。原八課白名單不擴張。
+
+416項測試、十二課實際Python各10次等待與VM輸出／顯示逐筆對照、建置及12項C++檢查通過。新十二課1440／1280×720／390／320px、故障／輸入／還原／下載、實際GP13 raycast、舊八課與UNO／ESP32共用幾何代表回歸通過；無頁面／主控台錯誤。沿main→Pages及兩板36份Arduino編譯gate發布，再確認公開版。
+
+完整合約、腳位、課號、驅動與限制見[pico-complete-curriculum.md](pico-complete-curriculum.md)。未做Pico實板UF2／電路／感測／Acer效能驗收，main.py實板例外與輸出復原仍需自行處理；沒有任意Python、直接燒錄、網路或精確電路求解。下一步為使用者逐課試用，基礎課程範圍已全部補齊。

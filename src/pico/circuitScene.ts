@@ -1,3 +1,5 @@
+import {isAdvanced} from './advancedLessons';
+import {createAdvancedScene} from './advancedScene';
 import * as THREE from 'three';
 import {picoPinById} from './board';
 import {partsFor} from './circuit';
@@ -5,6 +7,7 @@ import {hasPicoButton,type PicoView,type PicoLessonId} from './types';
 const positions:Record<string,[number,number,number]>={'p-res:a':[20,5,2],'p-res:b':[34,5,2],'p-led:a':[44,-4,2],'p-led:k':[52,-4,2],'p-button:a1':[24,-20,2],'p-button:a2':[24,-29,2],'p-button:b1':[40,-20,2],'p-button:b2':[40,-29,2],'p-pot:vcc':[23,-34,2],'p-pot:w':[32,-34,2],'p-pot:gnd':[41,-34,2],'p-ldr:a':[23,-34,2],'p-ldr:b':[34,-34,2],'p-divider:a':[47,-34,2],'p-divider:b':[61,-34,2],'p-pir:vcc':[23,-36,2],'p-pir:out':[32,-36,2],'p-pir:gnd':[41,-36,2]};
 export function picoPosition(id:string):THREE.Vector3|null {const pin=picoPinById.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(...p):null;}
 export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
+ if(isAdvanced(id))return createAdvancedScene(id);
  const group=new THREE.Group(),dynamic=new THREE.Group();group.add(dynamic);const materials:THREE.Material[]=[],textures:THREE.Texture[]=[],hitboxes:THREE.Mesh[]=[];
  const material=(color:number)=>{const m=new THREE.MeshStandardMaterial({color,roughness:.55});materials.push(m);return m;};
  const metal=material(0xb7bdc7),beige=material(0xdfc596),dark=material(0x26364c),red=material(0xb82d3c),terminal=material(0xe2bd5e),pending=material(0x3563e9);

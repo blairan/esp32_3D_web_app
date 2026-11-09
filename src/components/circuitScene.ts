@@ -30,9 +30,10 @@ export function terminalPosition(id: string): THREE.Vector3 | null {
   const pos = partPositions[id];
   return pos ? new THREE.Vector3(...pos) : null;
 }
-export function createCircuitScene(lessonId:LessonId='blink') {
+export function createCircuitScene(lessonId:LessonId='blink',custom?:{pins:typeof pinById;parts:Record<string,string>;path:typeof currentPath}) {
+  const pinsForScene=custom?.pins??pinById;
   const positions:Record<string,[number,number,number]>={...partPositions,...(lessonId==='environment-lab'?{'oled:vcc':[65,-18,2],'oled:gnd':[74,-18,2],'oled:sda':[83,-18,2],'oled:scl':[92,-18,2]}:{})};
-  const terminalPosition=(id:string)=>{const pin=pinById.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(p[0],p[1],p[2]):null;};
+  const terminalPosition=(id:string)=>{const pin=pinsForScene.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(p[0],p[1],p[2]):null;};
 
   const group = new THREE.Group();
   const hitboxes: THREE.Mesh[] = [];
@@ -146,7 +147,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
     for(const [id,pos] of Object.entries(positions).filter(([id])=>id.startsWith('button:'))){const right=id.includes(':b');tube([new THREE.Vector3(...pos),new THREE.Vector3(right?40.5:30.5,pos[1],1)],gray);text(id.split(':')[1].toUpperCase(),pos[0],pos[1]-2.6,4,1.6);}
     text('BUTTON',35.5,-2.5,13,2.3);
   }
-  for(const [id,pos] of Object.entries(positions).filter(([id])=>Object.hasOwn(pageBoardId==='uno-r3'?unoLesson(lessonId).parts:lessons[lessonId].parts,id))) {
+  for(const [id,pos] of Object.entries(positions).filter(([id])=>Object.hasOwn(custom?.parts??(pageBoardId==='uno-r3'?unoLesson(lessonId).parts:lessons[lessonId].parts),id))) {
     const terminal=new THREE.Mesh(new THREE.SphereGeometry(.8,16,10),green);terminal.position.set(...pos);group.add(terminal);
     const target=new THREE.Mesh(new THREE.SphereGeometry(2.2,12,8),pick);target.position.set(...pos);target.userData.pinId=id;group.add(target);hitboxes.push(target);
   }
@@ -189,7 +190,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
         wires.forEach((wire,index)=>{
           const from=terminalPosition(wire.from),to=terminalPosition(wire.to);if(!from||!to)return;
           const height=6+(index%3)*1.2,mid1=from.clone().lerp(to,.3),mid2=from.clone().lerp(to,.7);mid1.z=height;mid2.z=height;
-          if([wire.from,wire.to].some(id=>pinById.get(id)?.role==='ground')){const floor=(lessonId==='traffic-light'||lessonId==='rgb-mixing')?Math.min(from.y,to.y,-56)-5-(index%2)*3:lessonId==='dual-led'?Math.min(from.y,to.y,-32)-5-(index%2)*3:Math.min(from.y,to.y,-13)-5;mid1.set(from.x,floor,height);mid2.set(to.x,floor,height);}
+          if([wire.from,wire.to].some(id=>pinsForScene.get(id)?.role==='ground')){const floor=(lessonId==='traffic-light'||lessonId==='rgb-mixing')?Math.min(from.y,to.y,-56)-5-(index%2)*3:lessonId==='dual-led'?Math.min(from.y,to.y,-32)-5-(index%2)*3:Math.min(from.y,to.y,-13)-5;mid1.set(from.x,floor,height);mid2.set(to.x,floor,height);}
           const curve=new THREE.CatmullRomCurve3([from,mid1,mid2,to]);
           const material=new THREE.MeshStandardMaterial({color:wireColor(wire),roughness:.32});
           const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,32,.3,8,false),material);group.add(mesh);wireMeshes.push(mesh);addFlow('wire:'+wire.id,curve,wire.from);
@@ -214,7 +215,7 @@ export function createCircuitScene(lessonId:LessonId='blink') {
       if(buzzerRing)buzzerRing.visible=nextLit;
       if((lessonId==='pwm-breathing'||lessonId==='pot-dimming')){particleMaterial.opacity=brightness;arrowMaterial.transparent=true;arrowMaterial.opacity=brightness;}
       if(buttonCap)buttonCap.position.z=pressed?2:3.3;
-      lit=nextLit;lit2=nextLit2;lit3=nextLit3;const path=new Map(currentPath(wires,lit?'HIGH':'LOW',lessonId,lit2?'HIGH':'LOW',lit3?'HIGH':'LOW').map(segment=>[segment.kind+':'+segment.id,segment]));
+      lit=nextLit;lit2=nextLit2;lit3=nextLit3;const path=new Map((custom?.path??currentPath)(wires,lit?'HIGH':'LOW',lessonId,lit2?'HIGH':'LOW',lit3?'HIGH':'LOW').map(segment=>[segment.kind+':'+segment.id,segment]));
       for(const item of flowItems){const segment=path.get(item.key);item.active=Boolean(segment);item.forward=segment?.from===item.from;}
       ledVisuals.forEach((visual,index)=>{const on=[lit,lit2,lit3][index];visual.material.color.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x4388ff:0xe83942):visual.baseColor);visual.material.emissive.set(on?(lessonId==='traffic-light'?visual.baseColor:index?0x164edd:0xdc101c):0x000000);if((lessonId==='pwm-breathing'||lessonId==='pot-dimming'))visual.material.color.multiplyScalar(.35+.65*brightness);visual.material.emissiveIntensity=on ? .8*(index===0?brightness:1) : 0;(visual.halo.material as THREE.MeshBasicMaterial).opacity=.14*(index===0?brightness:1);visual.halo.visible=on;});positionFlow();
       const position=pending?terminalPosition(pending):null;pendingRing.visible=Boolean(position);if(position)pendingRing.position.copy(position).add(new THREE.Vector3(0,0,1.5));
