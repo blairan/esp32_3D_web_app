@@ -1,4 +1,4 @@
-import {hasPicoPWM,type PicoLessonId} from './types.ts';
+import {hasPicoButton,hasPicoPWM,type PicoLessonId} from './types.ts';
 import type {PicoArticleId} from './content.ts';
 export interface PythonCompletion {label:string;template:string;detail:string;topic:PicoArticleId}
 export function pythonCompletions(source:string,id:PicoLessonId):PythonCompletion[]{
@@ -15,7 +15,8 @@ export function pythonCompletions(source:string,id:PicoLessonId):PythonCompletio
   const sensor=source.match(/^([A-Za-z_]\w*)\s*=\s*Pin\(\s*14\s*,\s*Pin\.IN\s*\)/m)?.[1]??'pir';
   options.push({label:sensor+'.value',template:sensor+'.value()',detail:'讀GP14：活動1，沒有活動0',topic:'pir'},{label:'if',template:`if ${sensor}.value() == \${1}:\n\t\${指令}\nelse:\n\t\${指令}`,detail:'PIR條件；分支內8個空白',topic:'pir'},{label:'Pin.IN',template:'Pin.IN',detail:'PIR的3.3V數位輸入，不加上拉',topic:'pir'});
  }
- if(id==='button-led')options.push({label:input+'.value',template:input+'.value()',detail:'讀GP14：按下0，放開1',topic:'button'},{label:'if',template:`if ${input}.value() == \${0}:\n\t\${指令}\nelse:\n\t\${指令}`,detail:'按鈕條件；分支內8個空白',topic:'button'},{label:'Pin.IN',template:'Pin.IN, Pin.PULL_UP',detail:'輸入模式與內建上拉',topic:'button'});
+ if(hasPicoButton(id))options.push({label:input+'.value',template:input+'.value()',detail:'讀GP14：按下0，放開1',topic:'button'},{label:'if',template:`if ${input}.value() == \${0}:\n\t\${指令}\nelse:\n\t\${指令}`,detail:'按鈕條件；分支內8個空白',topic:'button'},{label:'Pin.IN',template:'Pin.IN, Pin.PULL_UP',detail:'輸入模式與內建上拉',topic:'button'});
+ if(id==='button-toggle'){const branch=options.find(o=>o.label==='if')!;Object.assign(branch,{label:'if',template:'if \${reading} < \${previous}:\n\t\${指令}',detail:'下降邊緣比較；只在1變0時處理',topic:'toggle'});const read=options.find(o=>o.label===input+'.value');if(read)read.topic='toggle';for(const n of new Set([...source.matchAll(/^\s*([A-Za-z_]\w*)\s*=/gm)].map(m=>m[1]).filter(n=>n!==name&&n!==input)))options.push({label:n,template:n,detail:'已宣告整數狀態',topic:'toggle'});}
  if(pwm){const knob=source.match(/^([A-Za-z_]\w*)\s*=\s*ADC\(\s*Pin\(\s*26\s*\)\s*\)/m)?.[1]??'knob';
   const digital=options.filter(o=>!o.label.startsWith(name+'.')&&o.label!=='Pin');
   digital.push({label:'PWM',template:'PWM(Pin(15))',detail:'GP15 PWM物件，需先匯入PWM',topic:'pwm'},{label:name+'.freq',template:name+'.freq(\${1000})',detail:'設定PWM頻率1～20000Hz',topic:'pwm'},{label:name+'.duty_u16',template:name+'.duty_u16(\${brightness})',detail:'16位元佔空比0～65535',topic:'pwm'},{label:'if',template:'if \${brightness} >= \${65535}:\n\t\${指令}',detail:'單層整數比較；分支內8個空白',topic:'pwm'});

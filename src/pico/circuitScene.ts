@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {picoPinById} from './board';
 import {partsFor} from './circuit';
-import type {PicoView,PicoLessonId} from './types';
+import {hasPicoButton,type PicoView,type PicoLessonId} from './types';
 const positions:Record<string,[number,number,number]>={'p-res:a':[20,5,2],'p-res:b':[34,5,2],'p-led:a':[44,-4,2],'p-led:k':[52,-4,2],'p-button:a1':[24,-20,2],'p-button:a2':[24,-29,2],'p-button:b1':[40,-20,2],'p-button:b2':[40,-29,2],'p-pot:vcc':[23,-34,2],'p-pot:w':[32,-34,2],'p-pot:gnd':[41,-34,2],'p-ldr:a':[23,-34,2],'p-ldr:b':[34,-34,2],'p-divider:a':[47,-34,2],'p-divider:b':[61,-34,2],'p-pir:vcc':[23,-36,2],'p-pir:out':[32,-36,2],'p-pir:gnd':[41,-36,2]};
 export function picoPosition(id:string):THREE.Vector3|null {const pin=picoPinById.get(id);if(pin)return new THREE.Vector3(pin.x,pin.y,3.3);const p=positions[id];return p?new THREE.Vector3(...p):null;}
 export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
@@ -28,7 +28,7 @@ export function createPicoCircuitScene(id:Exclude<PicoLessonId,'blink'>){
   for(const x of [23,32,41])box(.6,7,.6,x,-33,2,metal);label('PIR',32,-9,12);label('5V / OUT / GND',32,-42,27);
  }
  let button:THREE.Mesh|null=null;
- if(id==='button-led'){box(12,10,2,32,-24,1.8,dark);button=box(7,7,2,32,-24,3.8,metal);const hit=new THREE.Mesh(new THREE.BoxGeometry(9,8,5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.push(hit.material as THREE.Material);hit.position.set(32,-24,4);hit.userData.pinId='button:press';group.add(hit);hitboxes.push(hit);label('A1/A2',23,-35,11);label('B1/B2',41,-35,11);}
+ if(hasPicoButton(id)){box(12,10,2,32,-24,1.8,dark);button=box(7,7,2,32,-24,3.8,metal);const hit=new THREE.Mesh(new THREE.BoxGeometry(9,8,5),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.push(hit.material as THREE.Material);hit.position.set(32,-24,4);hit.userData.pinId='button:press';group.add(hit);hitboxes.push(hit);label('A1/A2',23,-35,11);label('B1/B2',41,-35,11);}
  const terminals=new Map<string,THREE.Mesh>();for(const key of Object.keys(partsFor(id))){const p=picoPosition(key)!;const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),terminal);mesh.position.copy(p);mesh.userData.pinId=key;group.add(mesh);terminals.set(key,mesh);const pick=new THREE.Mesh(new THREE.SphereGeometry(2.1,12,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));materials.push(pick.material as THREE.Material);pick.position.copy(p);pick.userData.pinId=key;group.add(pick);hitboxes.push(pick);}
  let view:PicoView={lit:false},options={enabled:true,playing:false,simple:false,reducedMotion:false},digest='',phase=0;
  const flows:{dot:THREE.Mesh;curve:THREE.CubicBezierCurve3;id:string}[]=[];

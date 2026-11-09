@@ -1,6 +1,6 @@
 # ESP32 Interactive Lab
 
-繁體中文瀏覽器 3D 教學實驗室，支援 **ESP32-DevKitC V4／WROOM-32E（38 Pin）** 與 **Arduino UNO R3／ATmega328P（32個主要排針端點）**；ESP32／UNO各有18項Arduino專題；新增 **Pico 2 W with headers／RP2350** 與7項MicroPython專題。
+繁體中文瀏覽器 3D 教學實驗室，支援 **ESP32-DevKitC V4／WROOM-32E（38 Pin）** 與 **Arduino UNO R3／ATmega328P（32個主要排針端點）**；ESP32／UNO各有18項Arduino專題；新增 **Pico 2 W with headers／RP2350** 與8項MicroPython專題。
 
 三板型已統一為灰白／暖橙的實驗手冊工作區：左側3D，右側「認識專題 → 接線 → 寫程式 → 觀察結果」。四步可自由切換並繼續執行，手動輸出需明確進入。流程、相容性與驗證見 [新版工作區](docs/learning-workbench.md)。
 
@@ -39,7 +39,7 @@ npm run preview
 
 ## 驗證狀態
 
-344 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
+354 項資料／電路／程式／外觀測試與 TypeScript／Vite production build 通過。已用 Playwright + Chromium（軟體 WebGL）驗證 38 腳選取、真實 3D raycast、拖曳不誤觸、重設、縮放、鍵盤、簡化模式、1280×720 與窄螢幕，以及 WebGL 初始化失敗／context lost 的降級操作。
 
 這不代表 Acer Aspire 5／Windows 11／Chrome 的實機效能驗收通過。實體筆電觸控板、Edge 與手機多指手勢未實測；不需另外購買觸控裝置才可接續。原規劃至少 30 FPS 仍是待實機量測目標。主要建置資產含自帶字體，包含按需載入的編輯器，壓縮傳輸約 0.6 MB，低於 5 MB 目標。
 
@@ -101,9 +101,9 @@ UNO使用5V邏輯、10位ADC、原生D／A接腳與A4／A5 I²C；18課都有接
 
 ## Pico 2 W · MicroPython
 
-第三板型為 **Raspberry Pi Pico 2 W with headers（RP2350）**。右上選單切換，或開啟 `?board=pico-2-w#code`。目前提供40個獨立主排針、3D探索、板載LED、外接LED、按鈕控制、PWM呼吸燈、電位器調光、光敏電阻夜燈及PIR人體移動感測燈七課、Python補全、10篇Wiki及答案；由自己寫的程式匯出 `main.py`，用Thonny上傳到已安裝對應MicroPython UF2的板上。`Pin("LED")`走無線晶片，不是GP25。
+第三板型為 **Raspberry Pi Pico 2 W with headers（RP2350）**。右上選單切換，或開啟 `?board=pico-2-w#code`。目前提供40個獨立主排針、3D探索、板載LED、外接LED、按鈕控制、PWM呼吸燈、電位器調光、光敏電阻夜燈、PIR人體移動感測燈及按一次切換LED八課、Python補全、11篇Wiki及答案；由自己寫的程式匯出 `main.py`，用Thonny上傳到已安裝對應MicroPython UF2的板上。`Pin("LED")`走無線晶片，不是GP25。
 
-Pico草稿與Arduino練習分開保存，跨電腦請使用Pico `.json`備份。這是受限語法教學，沒有任意Python、Wi-Fi／Bluetooth或直接燒錄；外接課支援3D／清單接線、範例顯示／還原、錯接診斷及分課保存。`npm test`另需Python 3檢查匯出語法。板型來源、40腳表見 [Pico 2 W 說明](docs/pico-2-w-micropython.md)；新課接線、語法與驗證見 [外接LED／按鈕課](docs/pico-external-button.md) 、[PWM／ADC課](docs/pico-pwm-adc.md) 、[光敏夜燈課](docs/pico-ldr-nightlight.md) 及 [PIR活動感測課](docs/pico-pir-led.md)。
+Pico草稿與Arduino練習分開保存，跨電腦請使用Pico `.json`備份。這是受限語法教學，沒有任意Python、Wi-Fi／Bluetooth或直接燒錄；外接課支援3D／清單接線、範例顯示／還原、錯接診斷及分課保存。`npm test`另需Python 3檢查匯出語法。板型來源、40腳表見 [Pico 2 W 說明](docs/pico-2-w-micropython.md)；新課接線、語法與驗證見 [外接LED／按鈕課](docs/pico-external-button.md) 、[PWM／ADC課](docs/pico-pwm-adc.md) 、[光敏夜燈課](docs/pico-ldr-nightlight.md) 、[PIR活動感測課](docs/pico-pir-led.md) 及 [按一次切換課](docs/pico-button-toggle.md)。
 
 ## 波形參考
 
